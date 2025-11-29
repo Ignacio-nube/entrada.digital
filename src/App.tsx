@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Inicio from './pages/Inicio';
@@ -15,7 +16,7 @@ import EditEvent from './pages/admin/EditEvent';
 import EventTickets from './pages/admin/EventTickets';
 import Validator from './pages/admin/Validator';
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" />;
 };

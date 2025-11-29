@@ -203,14 +203,14 @@ const AdminDashboard = () => {
                     <Heading size="lg" color={validationResult.success ? 'green.700' : 'red.700'}>
                       {validationResult.success ? '✅ ACCESO PERMITIDO' : '⛔ ACCESO DENEGADO'}
                     </Heading>
-                    <Text mt={2} fontSize="lg" fontWeight="bold">
+                    <Box mt={2} fontSize="lg" fontWeight="bold">
                       {validationResult.message}
-                    </Text>
+                    </Box>
                     {validationResult.ticket && (
                       <Box mt={4} textAlign="left" bg="white" p={4} borderRadius="md">
-                        <Text><strong>Ticket ID:</strong> {validationResult.ticket.id}</Text>
-                        <Text><strong>Tipo:</strong> {validationResult.ticket.tipo_entrada_id}</Text>
-                        <Text><strong>Comprador ID:</strong> {validationResult.ticket.cliente_id}</Text>
+                        <Box><strong>Ticket ID:</strong> {validationResult.ticket.id}</Box>
+                        <Box><strong>Tipo:</strong> {validationResult.ticket.tipo_entrada_id}</Box>
+                        <Box><strong>Comprador ID:</strong> {validationResult.ticket.cliente_id}</Box>
                       </Box>
                     )}
                   </Box>

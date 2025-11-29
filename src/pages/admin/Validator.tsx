@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Box, Heading, Input, Button, VStack, Text, useToast, Card, CardBody,
-  Stat, StatLabel, StatNumber, StatHelpText, Center, Icon
+  Center, Icon
 } from '@chakra-ui/react';
 import { FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';

@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Spacer, Button, Container, useColorMode, useColorModeValue, IconButton, Menu, MenuButton, MenuList, MenuItem, Avatar } from '@chakra-ui/react';
+import { Box, Flex, Heading, Spacer, Button, Container, useColorMode, useColorModeValue, IconButton, Menu, MenuButton, MenuList, MenuItem } from '@chakra-ui/react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { SunIcon, MoonIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import { useAuth } from '../context/AuthContext';

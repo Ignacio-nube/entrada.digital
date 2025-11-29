@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import {
   Box, Flex, Icon, useColorModeValue, Link, Drawer, DrawerContent,
   useDisclosure, Text, IconButton, CloseButton, VStack

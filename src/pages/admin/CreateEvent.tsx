@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import {
   Box, Button, FormControl, FormLabel, Input, VStack, Heading, Textarea,
-  useToast, HStack, IconButton, Table, Thead, Tbody, Tr, Th, Td,
-  NumberInput, NumberInputField, Card, CardBody, Text, Divider
+  useToast, HStack, IconButton,
+  NumberInput, NumberInputField, Card, CardBody, Text, Divider, Flex
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 import { useAuth } from '../../context/AuthContext';
@@ -220,5 +220,3 @@ export default function CreateEvent() {
     </Box>
   );
 }
-
-import { Flex } from '@chakra-ui/react';
