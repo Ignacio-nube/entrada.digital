@@ -5,6 +5,8 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,8 +20,11 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const endpoint = isRegistering ? 'http://localhost:3000/api/register' : 'http://localhost:3000/api/login';
+    const payload = isRegistering ? { nombre, email, password } : { email, password };
+
     try {
-      const res = await axios.post('http://localhost:3000/api/login', { email, password });
+      const res = await axios.post(endpoint, payload);
       login(res.data.token, res.data.user);
       toast({
         title: 'Bienvenido',
@@ -32,7 +37,7 @@ const Login = () => {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Credenciales incorrectas',
+        description: error.response?.data?.error || 'Error en la operación',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -52,9 +57,22 @@ const Login = () => {
         color={color}
       >
         <Stack spacing={6}>
-          <Heading size="lg" textAlign="center">Iniciar Sesión</Heading>
+          <Heading size="lg" textAlign="center">
+            {isRegistering ? 'Crear Cuenta' : 'Iniciar Sesión'}
+          </Heading>
           <form onSubmit={handleSubmit}>
             <Stack spacing={4}>
+              {isRegistering && (
+                <FormControl isRequired>
+                  <FormLabel>Nombre Completo</FormLabel>
+                  <Input 
+                    type="text" 
+                    value={nombre} 
+                    onChange={(e) => setNombre(e.target.value)} 
+                    placeholder="Tu Nombre"
+                  />
+                </FormControl>
+              )}
               <FormControl isRequired>
                 <FormLabel>Email</FormLabel>
                 <Input 
@@ -79,10 +97,19 @@ const Login = () => {
                 width="full" 
                 isLoading={loading}
               >
-                Ingresar
+                {isRegistering ? 'Registrarse' : 'Ingresar'}
               </Button>
             </Stack>
           </form>
+          <Button 
+            variant="link" 
+            colorScheme="purple" 
+            onClick={() => setIsRegistering(!isRegistering)}
+          >
+            {isRegistering 
+              ? '¿Ya tienes cuenta? Inicia sesión' 
+              : '¿No tienes cuenta? Regístrate'}
+          </Button>
         </Stack>
       </Box>
     </Container>

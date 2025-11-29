@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 
 interface Evento {
   id: number;
-  nombre: string;
+  titulo: string;
   fecha: string;
   lugar: string;
   descripcion: string;
@@ -108,7 +108,7 @@ export default function EventList() {
             <Card key={evento.id} variant="outline" _hover={{ shadow: 'md' }}>
               <CardHeader pb={2}>
                 <Flex justify="space-between" align="start">
-                  <Heading size="md" noOfLines={1}>{evento.nombre}</Heading>
+                  <Heading size="md" noOfLines={1}>{evento.titulo}</Heading>
                   <Badge colorScheme="purple">Activo</Badge>
                 </Flex>
                 <Text fontSize="sm" color="gray.500">

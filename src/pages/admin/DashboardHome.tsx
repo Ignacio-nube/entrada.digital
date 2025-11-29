@@ -1,7 +1,33 @@
-import { Box, SimpleGrid, Stat, StatLabel, StatNumber, StatHelpText, Card, CardBody, Heading } from '@chakra-ui/react';
+import { useEffect, useState } from 'react';
+import { Box, SimpleGrid, Stat, StatLabel, StatNumber, StatHelpText, Card, CardBody, Heading, Spinner, Center } from '@chakra-ui/react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function DashboardHome() {
-  // En el futuro, estos datos vendrían de una API
+  const [stats, setStats] = useState({ eventos: 0, tickets: { total_tickets: 0, tickets_usados: 0, total_ingresos: 0 } });
+  const [loading, setLoading] = useState(true);
+  const { token } = useAuth();
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/admin/stats', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, [token]);
+
+  if (loading) return <Center h="200px"><Spinner /></Center>;
+
   return (
     <Box>
       <Heading mb={6}>Resumen</Heading>
@@ -10,8 +36,8 @@ export default function DashboardHome() {
           <CardBody>
             <Stat>
               <StatLabel>Eventos Activos</StatLabel>
-              <StatNumber>3</StatNumber>
-              <StatHelpText>2 próximos</StatHelpText>
+              <StatNumber>{stats.eventos}</StatNumber>
+              <StatHelpText>Total registrados</StatHelpText>
             </Stat>
           </CardBody>
         </Card>
@@ -19,8 +45,8 @@ export default function DashboardHome() {
           <CardBody>
             <Stat>
               <StatLabel>Entradas Vendidas</StatLabel>
-              <StatNumber>1,205</StatNumber>
-              <StatHelpText>↗︎ 23% esta semana</StatHelpText>
+              <StatNumber>{stats.tickets?.total_tickets || 0}</StatNumber>
+              <StatHelpText>{stats.tickets?.tickets_usados || 0} usadas</StatHelpText>
             </Stat>
           </CardBody>
         </Card>
@@ -28,8 +54,8 @@ export default function DashboardHome() {
           <CardBody>
             <Stat>
               <StatLabel>Ingresos Totales</StatLabel>
-              <StatNumber>$45,000</StatNumber>
-              <StatHelpText>Feb 2024</StatHelpText>
+              <StatNumber>${stats.tickets?.total_ingresos || 0}</StatNumber>
+              <StatHelpText>Acumulado</StatHelpText>
             </Stat>
           </CardBody>
         </Card>

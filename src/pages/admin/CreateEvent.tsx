@@ -76,7 +76,7 @@ export default function CreateEvent() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          nombre,
+          titulo: nombre,
           fecha,
           lugar,
           descripcion,

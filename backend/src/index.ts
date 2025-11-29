@@ -126,6 +126,42 @@ app.post('/api/login', async (req: Request, res: Response) => {
     }
 });
 
+// 0.1 Registro (Solo Organizadores)
+app.post('/api/register', async (req: Request, res: Response) => {
+    const { nombre, email, password } = req.body;
+
+    if (!nombre || !email || !password) {
+        res.status(400).json({ error: 'Todos los campos son obligatorios' });
+        return;
+    }
+
+    try {
+        // Verificar si el usuario ya existe
+        const checkUser = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+        if (checkUser.rows.length > 0) {
+            res.status(400).json({ error: 'El email ya está registrado' });
+            return;
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const rol = 'organizador'; // Por defecto
+
+        const result = await pool.query(
+            'INSERT INTO usuarios (nombre, email, password, rol) VALUES ($1, $2, $3, $4) RETURNING id, nombre, email, rol',
+            [nombre, email, hashedPassword, rol]
+        );
+
+        const user = result.rows[0];
+        const token = jwt.sign({ id: user.id, email: user.email, rol: user.rol }, JWT_SECRET, { expiresIn: '8h' });
+
+        res.json({ token, user });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al registrar usuario' });
+    }
+});
+
 // 1. Listar Eventos
 app.get('/api/eventos', async (req: Request, res: Response) => {
     try {
@@ -455,9 +491,13 @@ app.get('/api/admin/stats', authenticateToken, authorizeRole(['admin', 'organiza
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+
+// Solo escuchar si no estamos en un entorno serverless (Vercel)
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    });
+}
 
 // Export for Vercel
 export default app;
