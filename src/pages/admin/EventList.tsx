@@ -29,7 +29,12 @@ export default function EventList() {
       });
       if (response.ok) {
         const data = await response.json();
-        setEventos(data);
+        if (Array.isArray(data)) {
+          setEventos(data);
+        } else {
+          console.error('API response is not an array:', data);
+          setEventos([]);
+        }
       }
     } catch (error) {
       console.error('Error fetching events:', error);

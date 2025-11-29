@@ -41,7 +41,12 @@ const AdminDashboard = () => {
       // Usar endpoint de mis eventos para el dashboard
       const eventosRes = await axios.get('/api/mis-eventos', config);
       setStats(statsRes.data);
-      setEventos(eventosRes.data);
+      if (Array.isArray(eventosRes.data)) {
+        setEventos(eventosRes.data);
+      } else {
+        console.error('Eventos response is not an array:', eventosRes.data);
+        setEventos([]);
+      }
     } catch (error) {
       console.error(error);
     }

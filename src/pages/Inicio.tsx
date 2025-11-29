@@ -25,7 +25,14 @@ const Inicio = () => {
 
   useEffect(() => {
     axios.get('/api/eventos')
-      .then(res => setEventos(res.data))
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          setEventos(res.data);
+        } else {
+          console.error('La respuesta de la API no es un array:', res.data);
+          setEventos([]);
+        }
+      })
       .catch(err => console.error(err));
   }, []);
 
