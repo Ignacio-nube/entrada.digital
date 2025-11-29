@@ -24,7 +24,7 @@ const Inicio = () => {
   const dateColor = useColorModeValue('purple.600', 'purple.300');
 
   useEffect(() => {
-    axios.get('http://localhost:3000/api/eventos')
+    axios.get('/api/eventos')
       .then(res => setEventos(res.data))
       .catch(err => console.error(err));
   }, []);

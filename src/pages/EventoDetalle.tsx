@@ -57,7 +57,7 @@ const EventoDetalle = () => {
   const borderColor = useColorModeValue('purple.100', 'purple.700');
 
   useEffect(() => {
-    axios.get(`http://localhost:3000/api/eventos/${id}`)
+    axios.get(`/api/eventos/${id}`)
       .then(res => setEvento(res.data))
       .catch(err => console.error(err));
   }, [id]);
@@ -88,7 +88,7 @@ const EventoDetalle = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:3000/api/comprar', {
+      const res = await axios.post('/api/comprar', {
         nombre,
         email,
         tipo_entrada_id: parseInt(tipoSeleccionado),

@@ -33,7 +33,7 @@ export default function EditEvent() {
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/eventos/${id}`);
+        const response = await fetch(`/api/eventos/${id}`);
         if (response.ok) {
           const data = await response.json();
           setNombre(data.titulo);
@@ -118,7 +118,7 @@ export default function EditEvent() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/api/eventos/${id}`, {
+      const response = await fetch(`/api/eventos/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

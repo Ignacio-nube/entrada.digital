@@ -10,7 +10,7 @@ export default function DashboardHome() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/admin/stats', {
+        const response = await fetch('/api/admin/stats', {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (response.ok) {

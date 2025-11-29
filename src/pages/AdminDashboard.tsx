@@ -37,9 +37,9 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const statsRes = await axios.get('http://localhost:3000/api/admin/stats', config);
+      const statsRes = await axios.get('/api/admin/stats', config);
       // Usar endpoint de mis eventos para el dashboard
-      const eventosRes = await axios.get('http://localhost:3000/api/mis-eventos', config);
+      const eventosRes = await axios.get('/api/mis-eventos', config);
       setStats(statsRes.data);
       setEventos(eventosRes.data);
     } catch (error) {
@@ -53,7 +53,7 @@ const AdminDashboard = () => {
 
   const handleCreateEvent = async () => {
     try {
-      await axios.post('http://localhost:3000/api/eventos', newEvent, {
+      await axios.post('/api/eventos', newEvent, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast({ title: 'Evento creado', status: 'success' });
@@ -68,7 +68,7 @@ const AdminDashboard = () => {
   const handleDeleteEvent = async (id: number) => {
     if (!window.confirm('¿Estás seguro de eliminar este evento?')) return;
     try {
-      await axios.delete(`http://localhost:3000/api/eventos/${id}`, {
+      await axios.delete(`/api/eventos/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast({ title: 'Evento eliminado', status: 'success' });
@@ -83,7 +83,7 @@ const AdminDashboard = () => {
     setValidating(true);
     setValidationResult(null);
     try {
-      const res = await axios.post('http://localhost:3000/api/validar-qr', { codigo_qr: qrCode });
+      const res = await axios.post('/api/validar-qr', { codigo_qr: qrCode });
       setValidationResult({ success: true, message: res.data.mensaje, ticket: res.data.ticket });
       toast({ title: 'Ticket Válido', status: 'success' });
     } catch (error: any) {

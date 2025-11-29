@@ -24,7 +24,7 @@ export default function EventList() {
 
   const fetchEventos = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/mis-eventos', {
+      const response = await fetch('/api/mis-eventos', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -46,7 +46,7 @@ export default function EventList() {
     if (!confirm('¿Estás seguro de eliminar este evento?')) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/eventos/${id}`, {
+      const response = await fetch(`/api/eventos/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

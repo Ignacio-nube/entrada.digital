@@ -16,7 +16,7 @@ export default function Validator() {
     if (!qrCode) return;
 
     try {
-      const response = await fetch('http://localhost:3000/api/validar-qr', {
+      const response = await fetch('/api/validar-qr', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

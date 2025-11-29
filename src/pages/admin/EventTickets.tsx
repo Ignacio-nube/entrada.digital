@@ -29,7 +29,7 @@ export default function EventTickets() {
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/eventos/${id}/tickets`, {
+        const response = await fetch(`/api/eventos/${id}/tickets`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {

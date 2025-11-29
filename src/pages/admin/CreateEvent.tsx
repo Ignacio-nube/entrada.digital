@@ -69,7 +69,7 @@ export default function CreateEvent() {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/eventos', {
+      const response = await fetch('/api/eventos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

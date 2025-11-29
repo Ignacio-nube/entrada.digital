@@ -20,7 +20,7 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const endpoint = isRegistering ? 'http://localhost:3000/api/register' : 'http://localhost:3000/api/login';
+    const endpoint = isRegistering ? '/api/register' : '/api/login';
     const payload = isRegistering ? { nombre, email, password } : { email, password };
 
     try {
