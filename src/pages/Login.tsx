@@ -25,19 +25,24 @@ const Login = () => {
 
     try {
       const res = await axios.post(endpoint, payload);
-      login(res.data.token, res.data.user);
-      toast({
-        title: 'Bienvenido',
-        description: `Hola ${res.data.user.nombre}`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-      navigate('/admin');
+      if (res.data && res.data.token && res.data.user) {
+        login(res.data.token, res.data.user);
+        toast({
+          title: 'Bienvenido',
+          description: `Hola ${res.data.user.nombre}`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        navigate('/admin');
+      } else {
+        throw new Error('Respuesta inválida del servidor');
+      }
     } catch (error: any) {
+      console.error('Login error:', error);
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Error en la operación',
+        description: error.response?.data?.error || error.message || 'Error en la operación',
         status: 'error',
         duration: 3000,
         isClosable: true,

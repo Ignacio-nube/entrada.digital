@@ -15,7 +15,13 @@ export default function DashboardHome() {
         });
         if (response.ok) {
           const data = await response.json();
-          setStats(data);
+          if (data && typeof data === 'object') {
+            setStats(data);
+          } else {
+            console.error('Invalid stats data:', data);
+          }
+        } else {
+          console.error('Stats fetch failed:', response.status);
         }
       } catch (error) {
         console.error('Error fetching stats:', error);
