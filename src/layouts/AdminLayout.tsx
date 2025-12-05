@@ -28,9 +28,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <Box minH="100vh" bg={useColorModeValue('gray.100', 'gray.900')}>
       <SidebarContent onClose={onClose} display={{ base: 'none', md: 'block' }} />
-      <DrawerRoot open={isOpen} onOpenChange={(e) => setIsOpen(e.open)} placement="start">
+      <DrawerRoot open={isOpen} onOpenChange={(e) => setIsOpen(e.open)} placement="start" size="xs">
         <DrawerBackdrop />
-        <DrawerContent>
+        <DrawerContent maxW="70vw">
           <DrawerCloseTrigger />
           <SidebarContent onClose={onClose} />
         </DrawerContent>
