@@ -1,12 +1,18 @@
 import { StrictMode, Component, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ChakraProvider, ColorModeScript, Box, Heading, Text, Button } from '@chakra-ui/react'
 import { BrowserRouter } from 'react-router-dom'
+import { Box, Heading, Text, Button } from '@chakra-ui/react'
+import { Provider } from '@/components/ui/provider'
+import { Toaster } from '@/components/ui/toaster'
 import './index.css'
 import App from './App.tsx'
-import theme from './theme'
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
+interface ErrorBoundaryState {
+  hasError: boolean
+  error: Error | null
+}
+
+class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
   constructor(props: { children: ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -16,7 +22,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
   }
 
@@ -26,7 +32,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
         <Box p={10} textAlign="center">
           <Heading>Algo salió mal 😢</Heading>
           <Text mt={4} color="red.500">{this.state.error?.message}</Text>
-          <Button mt={6} colorScheme="purple" onClick={() => window.location.reload()}>
+          <Button mt={6} colorPalette="purple" onClick={() => window.location.reload()}>
             Recargar Página
           </Button>
         </Box>
@@ -39,13 +45,13 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ColorModeScript initialColorMode={theme.config.initialColorMode} />
-    <ChakraProvider theme={theme}>
+    <Provider>
       <ErrorBoundary>
         <BrowserRouter>
           <App />
+          <Toaster />
         </BrowserRouter>
       </ErrorBoundary>
-    </ChakraProvider>
+    </Provider>
   </StrictMode>,
 )

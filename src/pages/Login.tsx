@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Box, Button, Container, FormControl, FormLabel, Heading, Input, Stack, useToast, useColorModeValue } from '@chakra-ui/react';
+import { Button, Container, Heading, Input, Stack, Card } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { Field } from '@/components/ui/field';
+import { toaster } from '@/components/ui/toaster';
 
 const Login = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -12,10 +14,6 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-  const toast = useToast();
-
-  const bg = useColorModeValue('white', 'gray.800');
-  const color = useColorModeValue('gray.800', 'white');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,25 +25,24 @@ const Login = () => {
       const res = await axios.post(endpoint, payload);
       if (res.data && res.data.token && res.data.user) {
         login(res.data.token, res.data.user);
-        toast({
+        toaster.success({
           title: 'Bienvenido',
           description: `Hola ${res.data.user.nombre}`,
-          status: 'success',
           duration: 3000,
-          isClosable: true,
         });
         navigate('/admin');
       } else {
         throw new Error('Respuesta inválida del servidor');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      toast({
+      const errorMessage = axios.isAxiosError(error) 
+        ? error.response?.data?.error || error.message 
+        : 'Error en la operación';
+      toaster.error({
         title: 'Error',
-        description: error.response?.data?.error || error.message || 'Error en la operación',
-        status: 'error',
+        description: errorMessage,
         duration: 3000,
-        isClosable: true,
       });
     } finally {
       setLoading(false);
@@ -54,69 +51,62 @@ const Login = () => {
 
   return (
     <Container maxW="sm" py={20}>
-      <Box 
-        bg={bg} 
-        p={8} 
-        borderRadius="xl" 
-        boxShadow="lg" 
-        color={color}
-      >
-        <Stack spacing={6}>
-          <Heading size="lg" textAlign="center">
-            {isRegistering ? 'Crear Cuenta' : 'Iniciar Sesión'}
-          </Heading>
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={4}>
-              {isRegistering && (
-                <FormControl isRequired>
-                  <FormLabel>Nombre Completo</FormLabel>
+      <Card.Root>
+        <Card.Body>
+          <Stack gap={6}>
+            <Heading size="lg" textAlign="center">
+              {isRegistering ? 'Crear Cuenta' : 'Iniciar Sesión'}
+            </Heading>
+            <form onSubmit={handleSubmit}>
+              <Stack gap={4}>
+                {isRegistering && (
+                  <Field label="Nombre Completo" required>
+                    <Input 
+                      type="text" 
+                      value={nombre} 
+                      onChange={(e) => setNombre(e.target.value)} 
+                      placeholder="Tu Nombre"
+                    />
+                  </Field>
+                )}
+                <Field label="Email" required>
                   <Input 
-                    type="text" 
-                    value={nombre} 
-                    onChange={(e) => setNombre(e.target.value)} 
-                    placeholder="Tu Nombre"
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    placeholder="admin@entrada.digital"
                   />
-                </FormControl>
-              )}
-              <FormControl isRequired>
-                <FormLabel>Email</FormLabel>
-                <Input 
-                  type="email" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  placeholder="admin@entrada.digital"
-                />
-              </FormControl>
-              <FormControl isRequired>
-                <FormLabel>Contraseña</FormLabel>
-                <Input 
-                  type="password" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  placeholder="********"
-                />
-              </FormControl>
-              <Button 
-                type="submit" 
-                colorScheme="purple" 
-                width="full" 
-                isLoading={loading}
-              >
-                {isRegistering ? 'Registrarse' : 'Ingresar'}
-              </Button>
-            </Stack>
-          </form>
-          <Button 
-            variant="link" 
-            colorScheme="purple" 
-            onClick={() => setIsRegistering(!isRegistering)}
-          >
-            {isRegistering 
-              ? '¿Ya tienes cuenta? Inicia sesión' 
-              : '¿No tienes cuenta? Regístrate'}
-          </Button>
-        </Stack>
-      </Box>
+                </Field>
+                <Field label="Contraseña" required>
+                  <Input 
+                    type="password" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    placeholder="********"
+                  />
+                </Field>
+                <Button 
+                  type="submit" 
+                  colorPalette="purple" 
+                  width="full" 
+                  loading={loading}
+                >
+                  {isRegistering ? 'Registrarse' : 'Ingresar'}
+                </Button>
+              </Stack>
+            </form>
+            <Button 
+              variant="plain" 
+              colorPalette="purple" 
+              onClick={() => setIsRegistering(!isRegistering)}
+            >
+              {isRegistering 
+                ? '¿Ya tienes cuenta? Inicia sesión' 
+                : '¿No tienes cuenta? Regístrate'}
+            </Button>
+          </Stack>
+        </Card.Body>
+      </Card.Root>
     </Container>
   );
 };

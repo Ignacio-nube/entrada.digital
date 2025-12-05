@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import {
-  Box, Button, FormControl, FormLabel, Input, VStack, Heading, Textarea,
-  useToast, HStack, IconButton,
-  NumberInput, NumberInputField, Card, CardBody, Text, Divider, Flex
+  Box, Button, Input, VStack, Heading, Textarea,
+  HStack, IconButton, Card, Text, Separator, Flex
 } from '@chakra-ui/react';
-import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import { LuPlus, LuTrash } from 'react-icons/lu';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Field } from '../../components/ui/field';
+import { NumberInputRoot, NumberInputField } from '../../components/ui/number-input';
+import { toaster } from '../../components/ui/toaster';
 
 interface TicketType {
   nombre: string;
@@ -27,7 +29,6 @@ export default function CreateEvent() {
   ]);
 
   const { token } = useAuth();
-  const toast = useToast();
   const navigate = useNavigate();
 
   const handleAddTicketType = () => {
@@ -58,12 +59,9 @@ export default function CreateEvent() {
     }));
 
     if (validTicketTypes.some(t => !t.nombre || isNaN(t.precio) || isNaN(t.stock))) {
-      toast({
+      toaster.error({
         title: 'Error en entradas',
         description: 'Por favor completa todos los campos de los tipos de entrada correctamente.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
       });
       return;
     }
@@ -86,25 +84,20 @@ export default function CreateEvent() {
       });
 
       if (response.ok) {
-        toast({
+        toaster.success({
           title: 'Evento creado',
           description: 'El evento y sus tipos de entrada se han creado correctamente.',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
         });
         navigate('/admin/eventos');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Error al crear evento');
       }
-    } catch (error: any) {
-      toast({
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error desconocido';
+      toaster.error({
         title: 'Error',
-        description: error.message,
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
+        description: message,
       });
     }
   };
@@ -113,106 +106,100 @@ export default function CreateEvent() {
     <Box maxW="800px" mx="auto">
       <Heading mb={6}>Crear Nuevo Evento</Heading>
       <form onSubmit={handleSubmit}>
-        <VStack spacing={4} align="stretch">
-          <Card variant="outline">
-            <CardBody>
-              <VStack spacing={4}>
-                <FormControl isRequired>
-                  <FormLabel>Nombre del Evento</FormLabel>
+        <VStack gap={4} align="stretch">
+          <Card.Root variant="outline" bg={{ _light: "white", _dark: "gray.800" }} borderColor={{ _light: "gray.200", _dark: "gray.700" }}>
+            <Card.Body>
+              <VStack gap={4}>
+                <Field label="Nombre del Evento" required>
                   <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
-                </FormControl>
+                </Field>
 
                 <HStack width="100%">
-                  <FormControl isRequired>
-                    <FormLabel>Fecha y Hora</FormLabel>
+                  <Field label="Fecha y Hora" required>
                     <Input type="datetime-local" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>Lugar</FormLabel>
+                  </Field>
+                  <Field label="Lugar" required>
                     <Input value={lugar} onChange={(e) => setLugar(e.target.value)} />
-                  </FormControl>
+                  </Field>
                 </HStack>
 
-                <FormControl>
-                  <FormLabel>Descripción</FormLabel>
+                <Field label="Descripción">
                   <Textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
-                </FormControl>
+                </Field>
 
-                <FormControl>
-                  <FormLabel>URL de Imagen</FormLabel>
+                <Field label="URL de Imagen">
                   <Input value={imagenUrl} onChange={(e) => setImagenUrl(e.target.value)} placeholder="https://..." />
-                </FormControl>
+                </Field>
               </VStack>
-            </CardBody>
-          </Card>
+            </Card.Body>
+          </Card.Root>
 
-          <Divider />
+          <Separator />
 
           <Box>
             <Flex justify="space-between" align="center" mb={4}>
               <Heading size="md">Tipos de Entrada</Heading>
-              <Button leftIcon={<AddIcon />} size="sm" colorScheme="purple" onClick={handleAddTicketType}>
+              <Button size="sm" colorPalette="purple" onClick={handleAddTicketType}>
+                <LuPlus />
                 Agregar Tipo
               </Button>
             </Flex>
 
             {ticketTypes.map((ticket, index) => (
-              <Card key={index} mb={4} variant="outline" borderColor="purple.200">
-                <CardBody>
-                  <VStack spacing={3}>
+              <Card.Root key={index} mb={4} variant="outline" bg={{ _light: "white", _dark: "gray.800" }} borderColor={{ _light: "purple.200", _dark: "purple.700" }}>
+                <Card.Body>
+                  <VStack gap={3}>
                     <Flex width="100%" justify="space-between" align="center">
-                      <Text fontWeight="bold" color="purple.600">Opción #{index + 1}</Text>
+                      <Text fontWeight="bold" color={{ _light: "purple.600", _dark: "purple.300" }}>Opción #{index + 1}</Text>
                       {ticketTypes.length > 1 && (
                         <IconButton
                           aria-label="Eliminar tipo"
-                          icon={<DeleteIcon />}
                           size="sm"
-                          colorScheme="red"
+                          colorPalette="red"
                           variant="ghost"
                           onClick={() => handleRemoveTicketType(index)}
-                        />
+                        >
+                          <LuTrash />
+                        </IconButton>
                       )}
                     </Flex>
                     
-                    <FormControl isRequired>
-                      <FormLabel fontSize="sm">Nombre (Ej: General, VIP)</FormLabel>
+                    <Field label="Nombre (Ej: General, VIP)" required>
                       <Input 
                         value={ticket.nombre} 
                         onChange={(e) => handleTicketTypeChange(index, 'nombre', e.target.value)}
                         placeholder="Nombre de la entrada"
                       />
-                    </FormControl>
+                    </Field>
 
                     <HStack width="100%">
-                      <FormControl isRequired>
-                        <FormLabel fontSize="sm">Precio ($)</FormLabel>
-                        <NumberInput min={0}>
+                      <Field label="Precio ($)" required>
+                        <NumberInputRoot min={0}>
                           <NumberInputField 
                             value={ticket.precio} 
                             onChange={(e) => handleTicketTypeChange(index, 'precio', e.target.value)}
                             placeholder="0.00"
                           />
-                        </NumberInput>
-                      </FormControl>
+                        </NumberInputRoot>
+                      </Field>
 
-                      <FormControl isRequired>
-                        <FormLabel fontSize="sm">Stock (Cant.)</FormLabel>
-                        <NumberInput min={1}>
+                      <Field label="Stock (Cant.)" required>
+                        <NumberInputRoot min={1}>
                           <NumberInputField 
                             value={ticket.stock} 
                             onChange={(e) => handleTicketTypeChange(index, 'stock', e.target.value)}
                             placeholder="100"
                           />
-                        </NumberInput>
-                      </FormControl>
+                        </NumberInputRoot>
+                      </Field>
                     </HStack>
                   </VStack>
-                </CardBody>
-              </Card>
+                </Card.Body>
+              </Card.Root>
             ))}
           </Box>
 
-          <Button type="submit" colorScheme="purple" size="lg" mt={4}>
+          <Button type="submit" colorPalette="purple" size="lg" mt={4}>
             Crear Evento Completo
           </Button>
         </VStack>

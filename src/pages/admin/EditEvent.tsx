@@ -1,18 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Button, FormControl, FormLabel, Input, VStack, Heading, Textarea,
-  useToast, Card, CardBody, Spinner, Center, HStack, Flex, Text, IconButton,
-  NumberInput, NumberInputField, Divider
+  Box, Button, Input, VStack, Heading, Textarea,
+  Card, Spinner, Center, HStack, Flex, Text, IconButton, Separator
 } from '@chakra-ui/react';
-import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import { LuPlus, LuTrash } from 'react-icons/lu';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Field } from '../../components/ui/field';
+import { NumberInputRoot, NumberInputField } from '../../components/ui/number-input';
+import { toaster } from '../../components/ui/toaster';
 
 interface TicketType {
   id?: number;
   nombre: string;
   precio: string;
   stock: string;
+}
+
+interface EventoData {
+  titulo: string;
+  fecha: string;
+  lugar: string;
+  descripcion: string;
+  imagen_url: string;
+  tipos_entrada?: Array<{
+    id: number;
+    nombre: string;
+    precio: number;
+    stock: number;
+  }>;
 }
 
 export default function EditEvent() {
@@ -27,46 +43,46 @@ export default function EditEvent() {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
 
   const { token } = useAuth();
-  const toast = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchEvent = async () => {
-      try {
-        const response = await fetch(`/api/eventos/${id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setNombre(data.titulo);
-          
-          const dateObj = new Date(data.fecha);
-          dateObj.setMinutes(dateObj.getMinutes() - dateObj.getTimezoneOffset());
-          setFecha(dateObj.toISOString().slice(0, 16));
-          
-          setLugar(data.lugar);
-          setDescripcion(data.descripcion);
-          setImagenUrl(data.imagen_url);
-          
-          // Cargar tipos de entrada
-          if (data.tipos_entrada) {
-            setTicketTypes(data.tipos_entrada.map((t: any) => ({
-              id: t.id,
-              nombre: t.nombre,
-              precio: t.precio.toString(),
-              stock: t.stock.toString()
-            })));
-          }
-        } else {
-          toast({ title: 'Error al cargar evento', status: 'error' });
-          navigate('/admin/eventos');
+  const fetchEvent = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/eventos/${id}`);
+      if (response.ok) {
+        const data: EventoData = await response.json();
+        setNombre(data.titulo);
+        
+        const dateObj = new Date(data.fecha);
+        dateObj.setMinutes(dateObj.getMinutes() - dateObj.getTimezoneOffset());
+        setFecha(dateObj.toISOString().slice(0, 16));
+        
+        setLugar(data.lugar);
+        setDescripcion(data.descripcion);
+        setImagenUrl(data.imagen_url);
+        
+        // Cargar tipos de entrada
+        if (data.tipos_entrada) {
+          setTicketTypes(data.tipos_entrada.map((t) => ({
+            id: t.id,
+            nombre: t.nombre,
+            precio: t.precio.toString(),
+            stock: t.stock.toString()
+          })));
         }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
+      } else {
+        toaster.error({ title: 'Error al cargar evento' });
+        navigate('/admin/eventos');
       }
-    };
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [id, navigate]);
+
+  useEffect(() => {
     fetchEvent();
-  }, [id, navigate, toast]);
+  }, [fetchEvent]);
 
   const handleAddTicketType = () => {
     setTicketTypes([...ticketTypes, { nombre: '', precio: '', stock: '' }]);
@@ -77,12 +93,9 @@ export default function EditEvent() {
   const handleRemoveTicketType = (index: number) => {
     const typeToRemove = ticketTypes[index];
     if (typeToRemove.id) {
-      toast({
+      toaster.warning({
         title: 'No se puede eliminar',
         description: 'Por seguridad, no se pueden eliminar tipos de entrada existentes que podrían tener ventas asociadas. Puedes poner el stock en 0.',
-        status: 'warning',
-        duration: 5000,
-        isClosable: true,
       });
       return;
     }
@@ -91,9 +104,8 @@ export default function EditEvent() {
     setTicketTypes(newTypes);
   };
 
-  const handleTicketTypeChange = (index: number, field: keyof TicketType, value: string) => {
+  const handleTicketTypeChange = (index: number, field: keyof Omit<TicketType, 'id'>, value: string) => {
     const newTypes = [...ticketTypes];
-    // @ts-ignore
     newTypes[index][field] = value;
     setTicketTypes(newTypes);
   };
@@ -109,10 +121,9 @@ export default function EditEvent() {
     }));
 
     if (validTicketTypes.some(t => !t.nombre || isNaN(t.precio) || isNaN(t.stock))) {
-      toast({
+      toaster.error({
         title: 'Error en entradas',
         description: 'Completa todos los campos de las entradas correctamente.',
-        status: 'error'
       });
       return;
     }
@@ -135,22 +146,19 @@ export default function EditEvent() {
       });
 
       if (response.ok) {
-        toast({
+        toaster.success({
           title: 'Evento actualizado',
-          status: 'success',
-          duration: 3000,
         });
         navigate('/admin/eventos');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Error al actualizar');
       }
-    } catch (error: any) {
-      toast({
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error desconocido';
+      toaster.error({
         title: 'Error',
-        description: error.message,
-        status: 'error',
-        duration: 3000,
+        description: message,
       });
     }
   };
@@ -161,105 +169,99 @@ export default function EditEvent() {
     <Box maxW="800px" mx="auto">
       <Heading mb={6}>Editar Evento</Heading>
       <form onSubmit={handleSubmit}>
-        <VStack spacing={4} align="stretch">
-          <Card variant="outline">
-            <CardBody>
-              <VStack spacing={4}>
-                <FormControl isRequired>
-                  <FormLabel>Nombre del Evento</FormLabel>
+        <VStack gap={4} align="stretch">
+          <Card.Root variant="outline" bg={{ _light: "white", _dark: "gray.800" }} borderColor={{ _light: "gray.200", _dark: "gray.700" }}>
+            <Card.Body>
+              <VStack gap={4}>
+                <Field label="Nombre del Evento" required>
                   <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
-                </FormControl>
+                </Field>
 
                 <HStack width="100%">
-                  <FormControl isRequired>
-                    <FormLabel>Fecha y Hora</FormLabel>
+                  <Field label="Fecha y Hora" required>
                     <Input type="datetime-local" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-                  </FormControl>
-                  <FormControl isRequired>
-                    <FormLabel>Lugar</FormLabel>
+                  </Field>
+                  <Field label="Lugar" required>
                     <Input value={lugar} onChange={(e) => setLugar(e.target.value)} />
-                  </FormControl>
+                  </Field>
                 </HStack>
 
-                <FormControl>
-                  <FormLabel>Descripción</FormLabel>
+                <Field label="Descripción">
                   <Textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
-                </FormControl>
+                </Field>
 
-                <FormControl>
-                  <FormLabel>URL de Imagen</FormLabel>
+                <Field label="URL de Imagen">
                   <Input value={imagenUrl} onChange={(e) => setImagenUrl(e.target.value)} />
-                </FormControl>
+                </Field>
               </VStack>
-            </CardBody>
-          </Card>
+            </Card.Body>
+          </Card.Root>
 
-          <Divider />
+          <Separator />
 
           <Box>
             <Flex justify="space-between" align="center" mb={4}>
               <Heading size="md">Tipos de Entrada</Heading>
-              <Button leftIcon={<AddIcon />} size="sm" colorScheme="purple" onClick={handleAddTicketType}>
+              <Button size="sm" colorPalette="purple" onClick={handleAddTicketType}>
+                <LuPlus />
                 Agregar Tipo
               </Button>
             </Flex>
 
             {ticketTypes.map((ticket, index) => (
-              <Card key={index} mb={4} variant="outline" borderColor="purple.200">
-                <CardBody>
-                  <VStack spacing={3}>
+              <Card.Root key={index} mb={4} variant="outline" bg={{ _light: "white", _dark: "gray.800" }} borderColor={{ _light: "purple.200", _dark: "purple.700" }}>
+                <Card.Body>
+                  <VStack gap={3}>
                     <Flex width="100%" justify="space-between" align="center">
-                      <Text fontWeight="bold" color="purple.600">
+                      <Text fontWeight="bold" color={{ _light: "purple.600", _dark: "purple.300" }}>
                         {ticket.id ? `Editar: ${ticket.nombre}` : 'Nuevo Tipo de Entrada'}
                       </Text>
                       <IconButton
                         aria-label="Eliminar tipo"
-                        icon={<DeleteIcon />}
                         size="sm"
-                        colorScheme="red"
+                        colorPalette="red"
                         variant="ghost"
                         onClick={() => handleRemoveTicketType(index)}
-                        isDisabled={!!ticket.id} // Deshabilitar si ya existe en BD
+                        disabled={!!ticket.id} // Deshabilitar si ya existe en BD
                         title={ticket.id ? "No se pueden eliminar entradas existentes" : "Eliminar"}
-                      />
+                      >
+                        <LuTrash />
+                      </IconButton>
                     </Flex>
                     
-                    <FormControl isRequired>
-                      <FormLabel fontSize="sm">Nombre</FormLabel>
+                    <Field label="Nombre" required>
                       <Input 
                         value={ticket.nombre} 
                         onChange={(e) => handleTicketTypeChange(index, 'nombre', e.target.value)}
                       />
-                    </FormControl>
+                    </Field>
 
                     <HStack width="100%">
-                      <FormControl isRequired>
-                        <FormLabel fontSize="sm">Precio ($)</FormLabel>
-                        <NumberInput min={0}>
+                      <Field label="Precio ($)" required>
+                        <NumberInputRoot min={0}>
                           <NumberInputField 
                             value={ticket.precio} 
                             onChange={(e) => handleTicketTypeChange(index, 'precio', e.target.value)}
                           />
-                        </NumberInput>
-                      </FormControl>
+                        </NumberInputRoot>
+                      </Field>
 
-                      <FormControl isRequired>
-                        <FormLabel fontSize="sm">Stock</FormLabel>
-                        <NumberInput min={0}>
+                      <Field label="Stock" required>
+                        <NumberInputRoot min={0}>
                           <NumberInputField 
                             value={ticket.stock} 
                             onChange={(e) => handleTicketTypeChange(index, 'stock', e.target.value)}
                           />
-                        </NumberInput>
-                      </FormControl>
+                        </NumberInputRoot>
+                      </Field>
                     </HStack>
                   </VStack>
-                </CardBody>
-              </Card>
+                </Card.Body>
+              </Card.Root>
             ))}
           </Box>
 
-          <Button type="submit" colorScheme="purple" size="lg" mt={4}>
+          <Button type="submit" colorPalette="purple" size="lg" mt={4}>
             Guardar Cambios
           </Button>
         </VStack>

@@ -1,15 +1,16 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import {
-  Box, Flex, Icon, useColorModeValue, Link, Drawer, DrawerContent,
-  useDisclosure, Text, IconButton, CloseButton, VStack
+  Box, Flex, Text, VStack, IconButton
 } from '@chakra-ui/react';
-import { FiHome, FiCalendar, FiCheckSquare, FiMenu, FiLogOut } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiCheckSquare, FiMenu, FiLogOut, FiX, FiSun, FiMoon } from 'react-icons/fi';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useColorModeValue, useColorMode } from '../components/ui/color-mode';
+import { DrawerRoot, DrawerContent, DrawerCloseTrigger, DrawerBackdrop } from '../components/ui/drawer';
 
 interface LinkItemProps {
   name: string;
-  icon: any;
+  icon: React.ElementType;
   path: string;
 }
 
@@ -20,23 +21,20 @@ const LinkItems: Array<LinkItemProps> = [
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onClose = () => setIsOpen(false);
+
   return (
     <Box minH="100vh" bg={useColorModeValue('gray.100', 'gray.900')}>
       <SidebarContent onClose={onClose} display={{ base: 'none', md: 'block' }} />
-      <Drawer
-        autoFocus={false}
-        isOpen={isOpen}
-        placement="left"
-        onClose={onClose}
-        returnFocusOnClose={false}
-        onOverlayClick={onClose}
-        size="full"
-      >
+      <DrawerRoot open={isOpen} onOpenChange={(e) => setIsOpen(e.open)} placement="start">
+        <DrawerBackdrop />
         <DrawerContent>
+          <DrawerCloseTrigger />
           <SidebarContent onClose={onClose} />
         </DrawerContent>
-      </Drawer>
+      </DrawerRoot>
       {/* Mobile Nav */}
       <MobileNav onOpen={onOpen} />
       <Box ml={{ base: 0, md: 60 }} p="4">
@@ -52,8 +50,9 @@ interface SidebarProps {
 }
 
 const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const { colorMode, toggleColorMode } = useColorMode();
 
   return (
     <Box
@@ -67,12 +66,35 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
       {...rest}
     >
       <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
-        <Text fontSize="2xl" fontFamily="monospace" fontWeight="bold">
-          Admin
-        </Text>
-        <CloseButton display={{ base: 'flex', md: 'none' }} onClick={onClose} />
+        <Box>
+          <Text fontSize="lg" fontWeight="bold" lineHeight="1.2">
+            {user?.rol === 'admin' ? 'Admin' : 'Organizador'}
+          </Text>
+          <Text fontSize="sm" color={useColorModeValue('gray.600', 'gray.400')} lineClamp={1}>
+            {user?.nombre || user?.email}
+          </Text>
+        </Box>
+        <Flex gap={2}>
+          <IconButton
+            onClick={toggleColorMode}
+            variant="ghost"
+            aria-label="Cambiar tema"
+            size="sm"
+          >
+            {colorMode === 'dark' ? <FiSun /> : <FiMoon />}
+          </IconButton>
+          <IconButton
+            display={{ base: 'flex', md: 'none' }}
+            onClick={onClose}
+            variant="ghost"
+            aria-label="Cerrar menú"
+            size="sm"
+          >
+            <FiX />
+          </IconButton>
+        </Flex>
       </Flex>
-      <VStack align="stretch" spacing={0}>
+      <VStack align="stretch" gap={0}>
         {LinkItems.map((link) => (
           <NavItem key={link.name} icon={link.icon} path={link.path} onClose={onClose}>
             {link.name}
@@ -87,25 +109,23 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
 };
 
 interface NavItemProps {
-  icon: any;
+  icon: React.ElementType;
   children: ReactNode;
   path: string;
   onClose: () => void;
   onClick?: () => void;
 }
 
-const NavItem = ({ icon, children, path, onClose, onClick }: NavItemProps) => {
+const NavItem = ({ icon: IconComponent, children, path, onClose, onClick }: NavItemProps) => {
   const location = useLocation();
   const isActive = location.pathname === path;
   const activeBg = useColorModeValue('purple.100', 'purple.900');
   const activeColor = useColorModeValue('purple.700', 'purple.200');
 
   return (
-    <Link 
-      as={RouterLink} 
+    <RouterLink 
       to={path} 
       style={{ textDecoration: 'none' }} 
-      _focus={{ boxShadow: 'none' }}
       onClick={() => {
         if (onClick) onClick();
         onClose();
@@ -125,19 +145,20 @@ const NavItem = ({ icon, children, path, onClose, onClick }: NavItemProps) => {
           color: activeColor,
         }}
       >
-        {icon && (
-          <Icon
+        {IconComponent && (
+          <Box
             mr="4"
             fontSize="16"
             _groupHover={{
               color: activeColor,
             }}
-            as={icon}
-          />
+          >
+            <IconComponent />
+          </Box>
         )}
         {children}
       </Flex>
-    </Link>
+    </RouterLink>
   );
 };
 
@@ -146,11 +167,13 @@ interface MobileProps {
 }
 
 const MobileNav = ({ onOpen }: MobileProps) => {
+  const { user } = useAuth();
+  
   return (
     <Flex
       ml={{ base: 0, md: 60 }}
       px={{ base: 4, md: 4 }}
-      height="20"
+      height="16"
       alignItems="center"
       bg={useColorModeValue('white', 'gray.900')}
       borderBottomWidth="1px"
@@ -163,17 +186,21 @@ const MobileNav = ({ onOpen }: MobileProps) => {
         onClick={onOpen}
         variant="outline"
         aria-label="open menu"
-        icon={<FiMenu />}
-      />
-
-      <Text
-        display={{ base: 'flex', md: 'none' }}
-        fontSize="2xl"
-        fontFamily="monospace"
-        fontWeight="bold"
       >
-        Admin
-      </Text>
+        <FiMenu />
+      </IconButton>
+
+      <Box textAlign="center">
+        <Text
+          display={{ base: 'flex', md: 'none' }}
+          fontSize="lg"
+          fontWeight="bold"
+        >
+          {user?.rol === 'admin' ? 'Admin' : 'Organizador'}
+        </Text>
+      </Box>
+      
+      <Box w="40px" /> {/* Spacer para centrar */}
     </Flex>
   );
 };

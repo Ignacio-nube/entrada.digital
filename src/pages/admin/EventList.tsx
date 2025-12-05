@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
-  Box, Heading, SimpleGrid, Card, CardHeader, CardBody, CardFooter,
-  Text, Button, useToast, Badge, Flex, IconButton, Spinner, Center
+  Box, Heading, SimpleGrid, Card, Text, Button, Badge, Flex, IconButton, Spinner, Center
 } from '@chakra-ui/react';
-import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import { LuPlus, LuTrash } from 'react-icons/lu';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { toaster } from '../../components/ui/toaster';
 
 interface Evento {
   id: number;
@@ -20,9 +20,8 @@ export default function EventList() {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const { token } = useAuth();
-  const toast = useToast();
 
-  const fetchEventos = async () => {
+  const fetchEventos = useCallback(async () => {
     try {
       const response = await fetch('/api/mis-eventos', {
         headers: { Authorization: `Bearer ${token}` },
@@ -41,11 +40,11 @@ export default function EventList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchEventos();
-  }, [token]);
+  }, [fetchEventos]);
 
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro de eliminar este evento?')) return;
@@ -57,19 +56,13 @@ export default function EventList() {
       });
 
       if (response.ok) {
-        toast({
+        toaster.success({
           title: 'Evento eliminado',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
         });
         setEventos(eventos.filter(e => e.id !== id));
       } else {
-        toast({
+        toaster.error({
           title: 'Error al eliminar',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
         });
       }
     } catch (error) {
@@ -89,76 +82,79 @@ export default function EventList() {
     <Box>
       <Flex justify="space-between" align="center" mb={6}>
         <Heading size="lg">Mis Eventos</Heading>
-        <Button
-          as={RouterLink}
-          to="/admin/crear-evento"
-          leftIcon={<AddIcon />}
-          colorScheme="purple"
-        >
-          Nuevo Evento
+        <Button asChild colorPalette="purple">
+          <RouterLink to="/admin/crear-evento">
+            <LuPlus />
+            Nuevo Evento
+          </RouterLink>
         </Button>
       </Flex>
 
       {eventos.length === 0 ? (
-        <Box textAlign="center" py={10} px={6} borderWidth={1} borderRadius="lg" borderStyle="dashed">
-          <Heading size="md" mb={2} color="gray.500">No tienes eventos creados</Heading>
-          <Text color="gray.500" mb={6}>Comienza creando tu primer evento para vender entradas.</Text>
-          <Button as={RouterLink} to="/admin/crear-evento" colorScheme="purple">
-            Crear Evento
+        <Box textAlign="center" py={10} px={6} borderWidth={1} borderRadius="lg" borderStyle="dashed" borderColor={{ _light: "gray.300", _dark: "gray.600" }}>
+          <Heading size="md" mb={2} color={{ _light: "gray.600", _dark: "gray.400" }}>No tienes eventos creados</Heading>
+          <Text color={{ _light: "gray.500", _dark: "gray.400" }} mb={6}>Comienza creando tu primer evento para vender entradas.</Text>
+          <Button asChild colorPalette="purple">
+            <RouterLink to="/admin/crear-evento">
+              Crear Evento
+            </RouterLink>
           </Button>
         </Box>
       ) : (
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
           {eventos.map((evento) => (
-            <Card key={evento.id} variant="outline" _hover={{ shadow: 'md' }}>
-              <CardHeader pb={2}>
+            <Card.Root key={evento.id} variant="outline" bg={{ _light: "white", _dark: "gray.800" }} borderColor={{ _light: "gray.200", _dark: "gray.700" }} _hover={{ shadow: 'md' }}>
+              <Card.Header pb={2}>
                 <Flex justify="space-between" align="start">
-                  <Heading size="md" noOfLines={1}>{evento.titulo}</Heading>
-                  <Badge colorScheme="purple">Activo</Badge>
+                  <Heading size="md" lineClamp={1}>{evento.titulo}</Heading>
+                  <Badge colorPalette="purple">Activo</Badge>
                 </Flex>
-                <Text fontSize="sm" color="gray.500">
+                <Text fontSize="sm" color={{ _light: "gray.600", _dark: "gray.400" }}>
                   {new Date(evento.fecha).toLocaleDateString()}
                 </Text>
-              </CardHeader>
-              <CardBody py={2}>
-                <Text noOfLines={2} fontSize="sm">
+              </Card.Header>
+              <Card.Body py={2}>
+                <Text lineClamp={2} fontSize="sm">
                   {evento.descripcion || 'Sin descripción'}
                 </Text>
-                <Text mt={2} fontSize="xs" fontWeight="bold" color="gray.600">
+                <Text mt={2} fontSize="xs" fontWeight="bold" color={{ _light: "gray.600", _dark: "gray.400" }}>
                   📍 {evento.lugar}
                 </Text>
-              </CardBody>
-              <CardFooter pt={2}>
+              </Card.Body>
+              <Card.Footer pt={2}>
                 <Flex width="100%" justify="flex-end" gap={2}>
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    colorScheme="purple"
-                    as={RouterLink}
-                    to={`/admin/evento/${evento.id}/tickets`}
+                    colorPalette="purple"
+                    asChild
                   >
-                    Ver Entradas
+                    <RouterLink to={`/admin/evento/${evento.id}/tickets`}>
+                      Ver Entradas
+                    </RouterLink>
                   </Button>
                   <Button 
                     size="sm" 
                     variant="ghost" 
-                    colorScheme="blue"
-                    as={RouterLink}
-                    to={`/admin/editar-evento/${evento.id}`}
+                    colorPalette="blue"
+                    asChild
                   >
-                    Editar
+                    <RouterLink to={`/admin/editar-evento/${evento.id}`}>
+                      Editar
+                    </RouterLink>
                   </Button>
                   <IconButton
                     aria-label="Eliminar evento"
-                    icon={<DeleteIcon />}
                     size="sm"
-                    colorScheme="red"
+                    colorPalette="red"
                     variant="ghost"
                     onClick={() => handleDelete(evento.id)}
-                  />
+                  >
+                    <LuTrash />
+                  </IconButton>
                 </Flex>
-              </CardFooter>
-            </Card>
+              </Card.Footer>
+            </Card.Root>
           ))}
         </SimpleGrid>
       )}

@@ -1,17 +1,14 @@
-import { Box, Flex, Heading, Spacer, Button, Container, useColorMode, useColorModeValue, IconButton, Menu, MenuButton, MenuList, MenuItem } from '@chakra-ui/react';
+import { Box, Flex, Heading, Button, Container, IconButton, Portal } from '@chakra-ui/react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { SunIcon, MoonIcon, ChevronDownIcon } from '@chakra-ui/icons';
+import { LuSun, LuMoon, LuChevronDown } from 'react-icons/lu';
+import { useColorMode } from '@/components/ui/color-mode';
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from '@/components/ui/menu';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const { colorMode, toggleColorMode } = useColorMode();
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
-  const bg = useColorModeValue('rgba(255, 255, 255, 0.1)', 'rgba(0, 0, 0, 0.3)');
-  const borderColor = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.05)');
-  const menuBg = useColorModeValue('white', 'gray.800');
-  const menuColor = useColorModeValue('gray.800', 'white');
 
   const handleLogout = () => {
     logout();
@@ -24,71 +21,63 @@ const Navbar = () => {
       position="sticky" 
       top={0} 
       zIndex={100}
-      bg={bg} 
+      bg="bg/80" 
       backdropFilter="blur(10px)" 
-      borderBottom="1px solid"
-      borderColor={borderColor}
-      boxShadow="0 4px 30px rgba(0, 0, 0, 0.1)"
-      color="white"
+      borderBottomWidth="1px"
+      borderColor="border.muted"
+      boxShadow="sm"
     >
       <Container maxW="1200px">
-        <Flex py={4} align="center">
-          <Heading size="md" letterSpacing="tight" textShadow="0 2px 4px rgba(0,0,0,0.2)">
+        <Flex py={4} align="center" justify="space-between">
+          <Heading size="md" letterSpacing="tight">
             <RouterLink to="/">🎟️ Entrada Digital</RouterLink>
           </Heading>
-          <Spacer />
-          <Button 
-            as={RouterLink} 
-            to="/" 
-            variant="ghost" 
-            color="white" 
-            mr={2}
-            _hover={{ bg: 'rgba(255, 255, 255, 0.2)' }}
-            _active={{ bg: 'rgba(255, 255, 255, 0.3)' }}
-          >
-            Eventos
-          </Button>
-
-          {isAuthenticated ? (
-            <Menu>
-              <MenuButton 
-                as={Button} 
-                rightIcon={<ChevronDownIcon />} 
-                variant="ghost" 
-                color="white"
-                _hover={{ bg: 'rgba(255, 255, 255, 0.2)' }}
-                _active={{ bg: 'rgba(255, 255, 255, 0.3)' }}
-                mr={2}
-              >
-                {user?.nombre}
-              </MenuButton>
-              <MenuList bg={menuBg} color={menuColor}>
-                <MenuItem onClick={() => navigate('/admin')}>Panel Admin</MenuItem>
-                <MenuItem onClick={handleLogout}>Cerrar Sesión</MenuItem>
-              </MenuList>
-            </Menu>
-          ) : (
+          
+          <Flex gap={2} align="center">
             <Button 
-              as={RouterLink} 
-              to="/login" 
-              variant="solid" 
-              colorScheme="purple" 
-              size="sm" 
-              mr={2}
+              asChild
+              variant="ghost" 
             >
-              Login
+              <RouterLink to="/">Eventos</RouterLink>
             </Button>
-          )}
 
-          <IconButton
-            aria-label="Toggle dark mode"
-            icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-            onClick={toggleColorMode}
-            variant="ghost"
-            color="white"
-            _hover={{ bg: 'rgba(255, 255, 255, 0.2)' }}
-            _active={{ bg: 'rgba(255, 255, 255, 0.3)' }}
-          />
+            {isAuthenticated ? (
+              <MenuRoot>
+                <MenuTrigger asChild>
+                  <Button variant="ghost">
+                    {user?.nombre}
+                    <LuChevronDown />
+                  </Button>
+                </MenuTrigger>
+                <Portal>
+                  <MenuContent>
+                    <MenuItem value="admin" onClick={() => navigate('/admin')}>
+                      Panel Admin
+                    </MenuItem>
+                    <MenuItem value="logout" onClick={handleLogout}>
+                      Cerrar Sesión
+                    </MenuItem>
+                  </MenuContent>
+                </Portal>
+              </MenuRoot>
+            ) : (
+              <Button 
+                asChild
+                colorPalette="purple" 
+                size="sm" 
+              >
+                <RouterLink to="/login">Login</RouterLink>
+              </Button>
+            )}
+
+            <IconButton
+              aria-label="Toggle dark mode"
+              variant="ghost"
+              onClick={toggleColorMode}
+            >
+              {colorMode === 'light' ? <LuMoon /> : <LuSun />}
+            </IconButton>
+          </Flex>
         </Flex>
       </Container>
     </Box>

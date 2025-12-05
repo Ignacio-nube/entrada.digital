@@ -426,10 +426,12 @@ app.post('/api/validar-qr', authenticateToken, authorizeRole(['admin', 'organiza
     const { codigo_qr } = req.body;
     try {
         const query = `
-            SELECT t.*, te.nombre as tipo_entrada, e.titulo as evento, e.id as evento_id
+            SELECT t.*, te.nombre as tipo_entrada, te.precio, e.titulo as evento, e.id as evento_id,
+                   c.nombre as cliente_nombre, c.email as cliente_email
             FROM tickets t
             JOIN tipos_entrada te ON t.tipo_entrada_id = te.id
             JOIN eventos e ON te.evento_id = e.id
+            JOIN clientes c ON t.cliente_id = c.id
             WHERE t.codigo_qr = $1
         `;
         const result = await pool.query(query, [codigo_qr]);
@@ -468,17 +470,41 @@ app.post('/api/validar-qr', authenticateToken, authorizeRole(['admin', 'organiza
 
 // 5. Dashboard Stats (Protegido)
 app.get('/api/admin/stats', authenticateToken, authorizeRole(['admin', 'organizador']), async (req: Request, res: Response) => {
+    const user = (req as any).user;
     try {
-        const tickets = await pool.query(`
-            SELECT 
-                COUNT(*) as total_tickets, 
-                SUM(CASE WHEN usado = TRUE THEN 1 ELSE 0 END) as tickets_usados,
-                SUM(t.precio) as total_ingresos
-            FROM tickets tk
-            JOIN tipos_entrada t ON tk.tipo_entrada_id = t.id
-        `);
-        
-        const eventos = await pool.query('SELECT COUNT(*) as total_eventos FROM eventos');
+        let ticketsQuery = '';
+        let eventosQuery = '';
+        const params: any[] = [];
+
+        if (user.rol === 'admin') {
+            // Admin ve todo
+            ticketsQuery = `
+                SELECT 
+                    COUNT(*) as total_tickets, 
+                    SUM(CASE WHEN tk.usado = TRUE THEN 1 ELSE 0 END) as tickets_usados,
+                    COALESCE(SUM(t.precio), 0) as total_ingresos
+                FROM tickets tk
+                JOIN tipos_entrada t ON tk.tipo_entrada_id = t.id
+            `;
+            eventosQuery = 'SELECT COUNT(*) as total_eventos FROM eventos';
+        } else {
+            // Organizador solo ve sus eventos
+            ticketsQuery = `
+                SELECT 
+                    COUNT(*) as total_tickets, 
+                    SUM(CASE WHEN tk.usado = TRUE THEN 1 ELSE 0 END) as tickets_usados,
+                    COALESCE(SUM(t.precio), 0) as total_ingresos
+                FROM tickets tk
+                JOIN tipos_entrada t ON tk.tipo_entrada_id = t.id
+                JOIN eventos e ON t.evento_id = e.id
+                WHERE e.usuario_id = $1
+            `;
+            eventosQuery = 'SELECT COUNT(*) as total_eventos FROM eventos WHERE usuario_id = $1';
+            params.push(user.id);
+        }
+
+        const tickets = await pool.query(ticketsQuery, params);
+        const eventos = await pool.query(eventosQuery, params);
 
         res.json({
             tickets: tickets.rows[0],
