@@ -1,0 +1,46 @@
+/* Futuristic Theme - entrada.digital */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Color Scheme - Red/Orange gradient */
+  --accent-gradient: linear-gradient(135deg, #ff6b6b 0%, #ff8a80 25%, #ffab40 50%, #ff7043 75%, #ff5722 100%);
+  --accent-primary: #ff6b6b;
+  --accent-secondary: #ff8a80;
+  --accent-tertiary: #ffab40;
+  
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #aaaaaa;
+  
+  /* Background */
+  --bg-dark: #000000;
+}
+
+/* ========================================
+   GRADIENT TEXT
+   ======================================== */
+.gradient-text {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ========================================
+   GLOBAL STYLES
+   ======================================== */
+* {
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}

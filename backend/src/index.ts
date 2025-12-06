@@ -14,10 +14,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configuración de PostgreSQL (Supabase)
+// Configuración de PostgreSQL (Supabase) con manejo de reconexión
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    max: 10, // máximo de conexiones en el pool
+    idleTimeoutMillis: 30000, // cerrar conexiones inactivas después de 30s
+    connectionTimeoutMillis: 10000, // timeout de conexión 10s
+});
+
+// Manejar errores del pool para evitar crashes
+pool.on('error', (err) => {
+    console.error('Error inesperado en el pool de PostgreSQL:', err.message);
+    // No hacer process.exit, dejar que el pool se recupere
 });
 
 // Test DB Connection

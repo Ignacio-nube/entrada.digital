@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  Box, Container, Heading, Text, Image, Stack, Input, Button, 
-  Flex, Card, Grid, GridItem, Separator, NativeSelect 
+  Box, Container, Heading, Text, Stack, Input, Button, 
+  Flex, Grid, GridItem, NativeSelect, VStack, HStack
 } from '@chakra-ui/react';
 import { NumberInputRoot, NumberInputField } from '@/components/ui/number-input';
 import { Field } from '@/components/ui/field';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toaster } from '@/components/ui/toaster';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LuCalendar, LuMapPin, LuTicket, LuArrowLeft } from 'react-icons/lu';
 import axios from 'axios';
+import { getOptimizedUrl } from '@/components/OptimizedImage';
 
 interface TipoEntrada {
   id: number;
@@ -96,169 +99,409 @@ const EventoDetalle = () => {
     }
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-ES', { 
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   if (!evento) return (
-    <Flex justify="center" align="center" h="50vh">
-      <Button loading variant="ghost" loadingText="Cargando evento...">Cargando</Button>
-    </Flex>
+    <Box 
+      minH="100vh" 
+      bg="black" 
+      display="flex" 
+      alignItems="center" 
+      justifyContent="center"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <VStack gap={4}>
+          <Box
+            w="50px"
+            h="50px"
+            borderRadius="full"
+            border="3px solid"
+            borderColor="transparent"
+            borderTopColor="#ff6b6b"
+            animation="spin 1s linear infinite"
+          />
+          <Text color="white" fontFamily="'Poppins', sans-serif">
+            Cargando evento...
+          </Text>
+        </VStack>
+      </motion.div>
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </Box>
   );
 
   const tipoActual = evento.tipos_entrada?.find(t => t.id === parseInt(tipoSeleccionado));
 
   return (
-    <Box minH="calc(100vh - 72px)" py={10} bg="bg.subtle">
-      <Container maxW="1000px">
-        <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={8}>
-          {/* Columna Izquierda: Info Evento */}
-          <GridItem>
-            <Stack gap={6}>
-              <Image 
-                src={evento.imagen_url} 
-                borderRadius="xl" 
-                objectFit="cover" 
-                w="100%" 
-                h="400px" 
-                shadow="lg" 
-              />
-              <Card.Root>
-                <Card.Body gap={3}>
-                  <Heading size="xl">{evento.titulo}</Heading>
-                  <Text fontSize="lg" fontWeight="bold" color="purple.fg">
-                    📅 {new Date(evento.fecha).toLocaleString()} <br/>
-                    📍 {evento.lugar}
-                  </Text>
-                  <Text color="fg.muted" lineHeight="tall">
-                    {evento.descripcion}
-                  </Text>
-                </Card.Body>
-              </Card.Root>
-            </Stack>
-          </GridItem>
+    <Box 
+      minH="100vh" 
+      position="relative"
+      overflow="hidden"
+    >
+      {/* Background Image */}
+      <Box
+        position="fixed"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        backgroundImage={`url('${getOptimizedUrl(evento.imagen_url, 1920, 1080, 'auto:eco')}')`}
+        backgroundSize="cover"
+        backgroundPosition="center"
+        filter="blur(8px)"
+        transform="scale(1.1)"
+        zIndex={0}
+      />
+      
+      {/* Dark Overlay */}
+      <Box
+        position="fixed"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        bg="rgba(0, 0, 0, 0.7)"
+        zIndex={1}
+      />
 
-          {/* Columna Derecha: Formulario Compra */}
-          <GridItem>
-            <Card.Root>
-              <Card.Header bg="purple.subtle" borderTopRadius="lg">
-                <Heading size="md">🎟️ Compra tus entradas</Heading>
-              </Card.Header>
-              <Card.Body>
-                <Stack gap={5}>
-                  <Field 
-                    label="Tipo de Entrada" 
-                    required 
-                    invalid={errors.tipo}
-                    errorText="Debes seleccionar un tipo de entrada."
-                  >
-                    <NativeSelect.Root>
-                      <NativeSelect.Field 
-                        placeholder="Selecciona una opción" 
-                        onChange={(e) => {
-                          setTipoSeleccionado(e.target.value);
-                          setErrors({...errors, tipo: false});
-                        }}
-                      >
-                        {evento.tipos_entrada?.map(tipo => (
-                          <option key={tipo.id} value={tipo.id} disabled={tipo.stock <= 0}>
-                            {tipo.nombre} - ${tipo.precio} {tipo.stock <= 0 ? '(Agotado)' : ''}
-                          </option>
-                        ))}
-                      </NativeSelect.Field>
-                      <NativeSelect.Indicator />
-                    </NativeSelect.Root>
-                  </Field>
+      {/* Content */}
+      <Box position="relative" zIndex={2} pt={{ base: 20, md: 24 }} pb={10}>
+        <Container maxW="1200px">
+          {/* Back Button */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Button
+              variant="ghost"
+              color="white"
+              mb={6}
+              onClick={() => navigate('/')}
+              _hover={{ bg: 'rgba(255, 107, 107, 0.2)' }}
+            >
+              <LuArrowLeft />
+              Volver a eventos
+            </Button>
+          </motion.div>
 
-                  <Field label="Cantidad" required>
-                    <NumberInputRoot 
-                      min={1} 
-                      max={10} 
-                      value={cantidad.toString()} 
-                      onValueChange={(details) => setCantidad(details.valueAsNumber)}
+          <Grid templateColumns={{ base: "1fr", lg: "1.2fr 1fr" }} gap={8}>
+            {/* Left Column - Event Info */}
+            <GridItem>
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <VStack align="start" gap={6}>
+                    {/* Event Image */}
+                    <Box
+                      w="100%"
+                      h={{ base: '250px', md: '350px' }}
+                      borderRadius="2xl"
+                      overflow="hidden"
+                      boxShadow="0 20px 60px rgba(0, 0, 0, 0.5)"
                     >
-                      <NumberInputField />
-                    </NumberInputRoot>
-                  </Field>
+                      <motion.img
+                        src={getOptimizedUrl(evento.imagen_url, 800, 450, 'auto:good')}
+                        alt={evento.titulo}
+                        loading="lazy"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                        initial={{ scale: 1.1 }}
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 0.8 }}
+                      />
+                    </Box>
 
+                    {/* Event Details Glass Card */}
+                    <Box
+                      w="100%"
+                      bg="rgba(255, 255, 255, 0.1)"
+                      backdropFilter="blur(20px)"
+                      border="1px solid rgba(255, 255, 255, 0.2)"
+                      borderRadius="2xl"
+                      p={6}
+                    >
+                      <VStack align="start" gap={4}>
+                        <Heading 
+                          as="h1" 
+                          size={{ base: 'xl', md: '2xl' }}
+                          color="white"
+                          fontFamily="'Poppins', sans-serif"
+                          fontWeight="700"
+                        >
+                          {evento.titulo}
+                        </Heading>
+
+                        <HStack gap={6} flexWrap="wrap">
+                          <HStack color="whiteAlpha.800">
+                            <LuCalendar />
+                            <Text fontFamily="'Poppins', sans-serif" fontSize="sm">
+                              {formatDate(evento.fecha)}
+                            </Text>
+                          </HStack>
+                          <HStack color="whiteAlpha.800">
+                            <LuMapPin />
+                            <Text fontFamily="'Poppins', sans-serif" fontSize="sm">
+                              {evento.lugar}
+                            </Text>
+                          </HStack>
+                        </HStack>
+
+                        <Text 
+                          color="whiteAlpha.700" 
+                          lineHeight="1.8"
+                          fontFamily="'Poppins', sans-serif"
+                        >
+                          {evento.descripcion}
+                        </Text>
+                      </VStack>
+                    </Box>
+                  </VStack>
+                </motion.div>
+              </AnimatePresence>
+            </GridItem>
+
+            {/* Right Column - Purchase Form */}
+            <GridItem>
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                <Box
+                  bg="rgba(255, 255, 255, 0.1)"
+                  backdropFilter="blur(20px)"
+                  border="1px solid rgba(255, 255, 255, 0.2)"
+                  borderRadius="2xl"
+                  overflow="hidden"
+                >
+                  {/* Header */}
                   <Box 
-                    p={4} 
-                    bg="purple.subtle" 
-                    borderRadius="md" 
-                    borderLeftWidth="4px"
-                    borderColor="purple.solid"
+                    p={5}
+                    bg="linear-gradient(135deg, rgba(255, 107, 107, 0.3) 0%, rgba(255, 138, 128, 0.2) 100%)"
+                    borderBottom="1px solid rgba(255, 255, 255, 0.1)"
                   >
-                    <Flex justify="space-between" align="center">
-                      <Text fontWeight="bold">Total a Pagar:</Text>
-                      <Text fontWeight="extrabold" fontSize="2xl" color="purple.fg">
-                        ${tipoActual ? (parseFloat(tipoActual.precio) * cantidad).toFixed(2) : '0.00'}
-                      </Text>
-                    </Flex>
+                    <HStack>
+                      <LuTicket color="#ff6b6b" size={24} />
+                      <Heading 
+                        size="md" 
+                        color="white"
+                        fontFamily="'Poppins', sans-serif"
+                      >
+                        Compra tus entradas
+                      </Heading>
+                    </HStack>
                   </Box>
 
-                  <Separator />
+                  {/* Form */}
+                  <Box p={6}>
+                    <Stack gap={5}>
+                      <Field 
+                        label={<Text color="white" fontFamily="'Poppins', sans-serif" fontSize="sm">Tipo de Entrada</Text>}
+                        required 
+                        invalid={errors.tipo}
+                        errorText="Debes seleccionar un tipo de entrada."
+                      >
+                        <NativeSelect.Root>
+                          <NativeSelect.Field 
+                            placeholder="Selecciona una opción" 
+                            onChange={(e) => {
+                              setTipoSeleccionado(e.target.value);
+                              setErrors({...errors, tipo: false});
+                            }}
+                            bg="rgba(255, 255, 255, 0.1)"
+                            border="1px solid rgba(255, 255, 255, 0.2)"
+                            color="white"
+                            borderRadius="lg"
+                            _hover={{ borderColor: 'rgba(255, 107, 107, 0.5)' }}
+                            _focus={{ borderColor: '#ff6b6b', boxShadow: '0 0 0 1px #ff6b6b' }}
+                          >
+                            {evento.tipos_entrada?.map(tipo => (
+                              <option 
+                                key={tipo.id} 
+                                value={tipo.id} 
+                                disabled={tipo.stock <= 0}
+                                style={{ background: '#1a1a1a', color: 'white' }}
+                              >
+                                {tipo.nombre} - ${tipo.precio} {tipo.stock <= 0 ? '(Agotado)' : ''}
+                              </option>
+                            ))}
+                          </NativeSelect.Field>
+                          <NativeSelect.Indicator color="white" />
+                        </NativeSelect.Root>
+                      </Field>
 
-                  <Heading size="sm">Datos del Comprador</Heading>
-                  
-                  <Field 
-                    label="Nombre Completo" 
-                    required 
-                    invalid={errors.nombre}
-                    errorText="El nombre es obligatorio."
-                  >
-                    <Input 
-                      placeholder="Ej: Juan Pérez" 
-                      value={nombre} 
-                      onChange={(e) => {
-                        setNombre(e.target.value);
-                        setErrors({...errors, nombre: false});
-                      }} 
-                    />
-                  </Field>
+                      <Field label={<Text color="white" fontFamily="'Poppins', sans-serif" fontSize="sm">Cantidad</Text>} required>
+                        <NumberInputRoot 
+                          min={1} 
+                          max={10} 
+                          value={cantidad.toString()} 
+                          onValueChange={(details) => setCantidad(details.valueAsNumber)}
+                        >
+                          <NumberInputField 
+                            bg="rgba(255, 255, 255, 0.1)"
+                            border="1px solid rgba(255, 255, 255, 0.2)"
+                            color="white"
+                            borderRadius="lg"
+                            _hover={{ borderColor: 'rgba(255, 107, 107, 0.5)' }}
+                            _focus={{ borderColor: '#ff6b6b', boxShadow: '0 0 0 1px #ff6b6b' }}
+                          />
+                        </NumberInputRoot>
+                      </Field>
 
-                  <Field 
-                    label="Correo Electrónico" 
-                    required 
-                    invalid={errors.email}
-                    errorText="Ingresa un correo válido."
-                  >
-                    <Input 
-                      type="email" 
-                      placeholder="Ej: juan@example.com" 
-                      value={email} 
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        setErrors({...errors, email: false});
-                      }} 
-                    />
-                  </Field>
+                      {/* Total */}
+                      <Box 
+                        p={4} 
+                        bg="linear-gradient(135deg, rgba(255, 107, 107, 0.2) 0%, rgba(255, 138, 128, 0.1) 100%)"
+                        borderRadius="xl" 
+                        border="1px solid rgba(255, 107, 107, 0.3)"
+                      >
+                        <Flex justify="space-between" align="center">
+                          <Text fontWeight="500" color="white" fontFamily="'Poppins', sans-serif">
+                            Total a Pagar:
+                          </Text>
+                          <Text 
+                            fontWeight="700" 
+                            fontSize="2xl" 
+                            color="#ff6b6b"
+                            fontFamily="'Poppins', sans-serif"
+                          >
+                            ${tipoActual ? (parseFloat(tipoActual.precio) * cantidad).toFixed(2) : '0.00'}
+                          </Text>
+                        </Flex>
+                      </Box>
 
-                  <Field invalid={errors.pago} errorText="Debes aceptar el método de pago.">
-                    <Checkbox 
-                      checked={metodoPago} 
-                      onCheckedChange={(e) => {
-                        setMetodoPago(!!e.checked);
-                        setErrors({...errors, pago: false});
-                      }}
-                      colorPalette="purple"
-                    >
-                      Acepto pagar con Tarjeta (Simulado)
-                    </Checkbox>
-                  </Field>
+                      {/* Separator */}
+                      <Box h="1px" bg="rgba(255, 255, 255, 0.1)" my={2} />
 
-                  <Button 
-                    colorPalette="purple" 
-                    size="lg" 
-                    onClick={handleCompra} 
-                    loading={loading} 
-                    disabled={!tipoActual}
-                    w="full"
-                    mt={2}
-                  >
-                    Confirmar Compra
-                  </Button>
-                </Stack>
-              </Card.Body>
-            </Card.Root>
-          </GridItem>
-        </Grid>
-      </Container>
+                      <Text 
+                        fontWeight="600" 
+                        color="white" 
+                        fontFamily="'Poppins', sans-serif"
+                        fontSize="sm"
+                      >
+                        Datos del Comprador
+                      </Text>
+                      
+                      <Field 
+                        label={<Text color="white" fontFamily="'Poppins', sans-serif" fontSize="sm">Nombre Completo</Text>}
+                        required 
+                        invalid={errors.nombre}
+                        errorText="El nombre es obligatorio."
+                      >
+                        <Input 
+                          placeholder="Ej: Juan Pérez" 
+                          value={nombre} 
+                          onChange={(e) => {
+                            setNombre(e.target.value);
+                            setErrors({...errors, nombre: false});
+                          }}
+                          bg="rgba(255, 255, 255, 0.1)"
+                          border="1px solid rgba(255, 255, 255, 0.2)"
+                          color="white"
+                          borderRadius="lg"
+                          _placeholder={{ color: 'whiteAlpha.500' }}
+                          _hover={{ borderColor: 'rgba(255, 107, 107, 0.5)' }}
+                          _focus={{ borderColor: '#ff6b6b', boxShadow: '0 0 0 1px #ff6b6b' }}
+                        />
+                      </Field>
+
+                      <Field 
+                        label={<Text color="white" fontFamily="'Poppins', sans-serif" fontSize="sm">Correo Electrónico</Text>}
+                        required 
+                        invalid={errors.email}
+                        errorText="Ingresa un correo válido."
+                      >
+                        <Input 
+                          type="email" 
+                          placeholder="Ej: juan@example.com" 
+                          value={email} 
+                          onChange={(e) => {
+                            setEmail(e.target.value);
+                            setErrors({...errors, email: false});
+                          }}
+                          bg="rgba(255, 255, 255, 0.1)"
+                          border="1px solid rgba(255, 255, 255, 0.2)"
+                          color="white"
+                          borderRadius="lg"
+                          _placeholder={{ color: 'whiteAlpha.500' }}
+                          _hover={{ borderColor: 'rgba(255, 107, 107, 0.5)' }}
+                          _focus={{ borderColor: '#ff6b6b', boxShadow: '0 0 0 1px #ff6b6b' }}
+                        />
+                      </Field>
+
+                      <Field invalid={errors.pago} errorText="Debes aceptar el método de pago.">
+                        <Checkbox 
+                          checked={metodoPago} 
+                          onCheckedChange={(e) => {
+                            setMetodoPago(!!e.checked);
+                            setErrors({...errors, pago: false});
+                          }}
+                          colorPalette="red"
+                        >
+                          <Text color="whiteAlpha.800" fontSize="sm" fontFamily="'Poppins', sans-serif">
+                            Acepto pagar con Tarjeta (Simulado)
+                          </Text>
+                        </Checkbox>
+                      </Field>
+
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Button 
+                          size="lg" 
+                          onClick={handleCompra} 
+                          loading={loading} 
+                          disabled={!tipoActual}
+                          w="full"
+                          mt={2}
+                          bg="linear-gradient(135deg, #ff6b6b 0%, #ff8a80 50%, #ffab40 100%)"
+                          color="white"
+                          fontFamily="'Poppins', sans-serif"
+                          fontWeight="600"
+                          borderRadius="xl"
+                          _hover={{
+                            boxShadow: '0 10px 30px rgba(255, 107, 107, 0.4)',
+                          }}
+                          _disabled={{
+                            opacity: 0.5,
+                            cursor: 'not-allowed',
+                          }}
+                        >
+                          Confirmar Compra
+                        </Button>
+                      </motion.div>
+                    </Stack>
+                  </Box>
+                </Box>
+              </motion.div>
+            </GridItem>
+          </Grid>
+        </Container>
+      </Box>
     </Box>
   );
 };

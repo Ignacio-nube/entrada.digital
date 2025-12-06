@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Box, Heading, SimpleGrid, Card, Text, Button, Badge, Flex, IconButton, Spinner, Center
+  Box, Heading, SimpleGrid, Text, Button, Badge, Flex, IconButton, Spinner, Center, VStack, HStack, Image
 } from '@chakra-ui/react';
-import { LuPlus, LuTrash } from 'react-icons/lu';
+import { LuPlus, LuTrash2, LuPencil, LuTicket, LuCalendar, LuMapPin } from 'react-icons/lu';
 import { Link as RouterLink } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { toaster } from '../../components/ui/toaster';
+import { getOptimizedUrl } from '../../components/OptimizedImage';
 
 interface Evento {
   id: number;
@@ -15,6 +17,14 @@ interface Evento {
   descripcion: string;
   imagen_url: string;
 }
+
+// Glass card style
+const glassCard = {
+  bg: 'rgba(255, 255, 255, 0.05)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  borderRadius: '2xl',
+};
 
 export default function EventList() {
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -31,7 +41,6 @@ export default function EventList() {
         if (Array.isArray(data)) {
           setEventos(data);
         } else {
-          console.error('API response is not an array:', data);
           setEventos([]);
         }
       }
@@ -56,105 +65,219 @@ export default function EventList() {
       });
 
       if (response.ok) {
-        toaster.success({
-          title: 'Evento eliminado',
-        });
+        toaster.success({ title: 'Evento eliminado' });
         setEventos(eventos.filter(e => e.id !== id));
       } else {
-        toaster.error({
-          title: 'Error al eliminar',
-        });
+        toaster.error({ title: 'Error al eliminar' });
       }
     } catch (error) {
       console.error('Error deleting event:', error);
     }
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
   if (loading) {
     return (
       <Center h="50vh">
-        <Spinner size="xl" color="purple.500" />
+        <VStack gap={4}>
+          <Spinner size="xl" color="#ff6b6b" />
+          <Text color="whiteAlpha.600">Cargando eventos...</Text>
+        </VStack>
       </Center>
     );
   }
 
   return (
     <Box>
-      <Flex justify="space-between" align="center" mb={6}>
-        <Heading size="lg">Mis Eventos</Heading>
-        <Button asChild colorPalette="purple">
-          <RouterLink to="/admin/crear-evento">
-            <LuPlus />
-            Nuevo Evento
-          </RouterLink>
-        </Button>
-      </Flex>
-
-      {eventos.length === 0 ? (
-        <Box textAlign="center" py={10} px={6} borderWidth={1} borderRadius="lg" borderStyle="dashed" borderColor={{ _light: "gray.300", _dark: "gray.600" }}>
-          <Heading size="md" mb={2} color={{ _light: "gray.600", _dark: "gray.400" }}>No tienes eventos creados</Heading>
-          <Text color={{ _light: "gray.500", _dark: "gray.400" }} mb={6}>Comienza creando tu primer evento para vender entradas.</Text>
-          <Button asChild colorPalette="purple">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Flex justify="space-between" align="center" mb={6}>
+          <Heading size="lg" color="white" fontFamily="'Poppins', sans-serif">
+            Mis Eventos
+          </Heading>
+          <Button 
+            asChild 
+            size="sm"
+            bg="linear-gradient(135deg, #ff6b6b 0%, #ff8a80 100%)"
+            color="white"
+            borderRadius="xl"
+            _hover={{ opacity: 0.9 }}
+          >
             <RouterLink to="/admin/crear-evento">
-              Crear Evento
+              <LuPlus />
+              Nuevo
             </RouterLink>
           </Button>
-        </Box>
+        </Flex>
+      </motion.div>
+
+      {eventos.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Box 
+            {...glassCard} 
+            textAlign="center" 
+            py={12} 
+            px={6}
+          >
+            <VStack gap={4}>
+              <Box
+                p={4}
+                borderRadius="full"
+                bg="rgba(255, 107, 107, 0.1)"
+              >
+                <LuCalendar size={40} color="#ff6b6b" />
+              </Box>
+              <Heading size="md" color="white" fontFamily="'Poppins', sans-serif">
+                No tienes eventos
+              </Heading>
+              <Text color="whiteAlpha.600" maxW="300px">
+                Comienza creando tu primer evento para vender entradas
+              </Text>
+              <Button 
+                asChild 
+                mt={2}
+                bg="linear-gradient(135deg, #ff6b6b 0%, #ff8a80 100%)"
+                color="white"
+                borderRadius="xl"
+                _hover={{ opacity: 0.9 }}
+              >
+                <RouterLink to="/admin/crear-evento">
+                  <LuPlus />
+                  Crear Evento
+                </RouterLink>
+              </Button>
+            </VStack>
+          </Box>
+        </motion.div>
       ) : (
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
-          {eventos.map((evento) => (
-            <Card.Root key={evento.id} variant="outline" bg={{ _light: "white", _dark: "gray.800" }} borderColor={{ _light: "gray.200", _dark: "gray.700" }} _hover={{ shadow: 'md' }}>
-              <Card.Header pb={2}>
-                <Flex justify="space-between" align="start">
-                  <Heading size="md" lineClamp={1}>{evento.titulo}</Heading>
-                  <Badge colorPalette="purple">Activo</Badge>
-                </Flex>
-                <Text fontSize="sm" color={{ _light: "gray.600", _dark: "gray.400" }}>
-                  {new Date(evento.fecha).toLocaleDateString()}
-                </Text>
-              </Card.Header>
-              <Card.Body py={2}>
-                <Text lineClamp={2} fontSize="sm">
-                  {evento.descripcion || 'Sin descripción'}
-                </Text>
-                <Text mt={2} fontSize="xs" fontWeight="bold" color={{ _light: "gray.600", _dark: "gray.400" }}>
-                  📍 {evento.lugar}
-                </Text>
-              </Card.Body>
-              <Card.Footer pt={2}>
-                <Flex width="100%" justify="flex-end" gap={2}>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    colorPalette="purple"
-                    asChild
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
+          {eventos.map((evento, index) => (
+            <motion.div
+              key={evento.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              <Box 
+                {...glassCard} 
+                overflow="hidden"
+                _hover={{ 
+                  bg: 'rgba(255, 255, 255, 0.08)',
+                  transform: 'translateY(-2px)',
+                }}
+                transition="all 0.2s"
+              >
+                {/* Event Image */}
+                <Box h="120px" overflow="hidden" position="relative">
+                  <Image
+                    src={getOptimizedUrl(evento.imagen_url, 400, 200, 'auto:eco')}
+                    alt={evento.titulo}
+                    w="100%"
+                    h="100%"
+                    objectFit="cover"
+                  />
+                  <Box
+                    position="absolute"
+                    top={0}
+                    left={0}
+                    right={0}
+                    bottom={0}
+                    bg="linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.8) 100%)"
+                  />
+                  <Badge 
+                    position="absolute"
+                    top={2}
+                    right={2}
+                    bg="rgba(74, 222, 128, 0.9)"
+                    color="white"
+                    fontSize="xs"
+                    px={2}
+                    borderRadius="full"
                   >
-                    <RouterLink to={`/admin/evento/${evento.id}/tickets`}>
-                      Ver Entradas
-                    </RouterLink>
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    colorPalette="blue"
-                    asChild
+                    Activo
+                  </Badge>
+                </Box>
+
+                {/* Event Info */}
+                <Box p={4}>
+                  <Text 
+                    fontWeight="700" 
+                    color="white" 
+                    fontSize="md"
+                    lineClamp={1}
+                    fontFamily="'Poppins', sans-serif"
+                    mb={2}
                   >
-                    <RouterLink to={`/admin/editar-evento/${evento.id}`}>
-                      Editar
-                    </RouterLink>
-                  </Button>
-                  <IconButton
-                    aria-label="Eliminar evento"
-                    size="sm"
-                    colorPalette="red"
-                    variant="ghost"
-                    onClick={() => handleDelete(evento.id)}
-                  >
-                    <LuTrash />
-                  </IconButton>
-                </Flex>
-              </Card.Footer>
-            </Card.Root>
+                    {evento.titulo}
+                  </Text>
+
+                  <VStack align="start" gap={1} mb={3}>
+                    <HStack gap={2} color="whiteAlpha.600" fontSize="xs">
+                      <LuCalendar size={12} />
+                      <Text>{formatDate(evento.fecha)}</Text>
+                    </HStack>
+                    <HStack gap={2} color="whiteAlpha.600" fontSize="xs">
+                      <LuMapPin size={12} />
+                      <Text lineClamp={1}>{evento.lugar}</Text>
+                    </HStack>
+                  </VStack>
+
+                  {/* Actions */}
+                  <Flex gap={2} pt={2} borderTop="1px solid rgba(255,255,255,0.1)">
+                    <Button 
+                      size="xs" 
+                      flex={1}
+                      variant="ghost"
+                      color="#ff6b6b"
+                      _hover={{ bg: 'rgba(255, 107, 107, 0.1)' }}
+                      asChild
+                    >
+                      <RouterLink to={`/admin/evento/${evento.id}/tickets`}>
+                        <LuTicket size={14} />
+                        Entradas
+                      </RouterLink>
+                    </Button>
+                    <IconButton
+                      aria-label="Editar"
+                      size="xs"
+                      variant="ghost"
+                      color="whiteAlpha.700"
+                      _hover={{ bg: 'rgba(255, 255, 255, 0.1)' }}
+                      asChild
+                    >
+                      <RouterLink to={`/admin/editar-evento/${evento.id}`}>
+                        <LuPencil size={14} />
+                      </RouterLink>
+                    </IconButton>
+                    <IconButton
+                      aria-label="Eliminar"
+                      size="xs"
+                      variant="ghost"
+                      color="red.400"
+                      _hover={{ bg: 'rgba(239, 68, 68, 0.1)' }}
+                      onClick={() => handleDelete(evento.id)}
+                    >
+                      <LuTrash2 size={14} />
+                    </IconButton>
+                  </Flex>
+                </Box>
+              </Box>
+            </motion.div>
           ))}
         </SimpleGrid>
       )}

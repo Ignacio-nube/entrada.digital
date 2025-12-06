@@ -1,12 +1,11 @@
 import { type ReactNode, useState } from 'react';
 import {
-  Box, Flex, Text, VStack, IconButton
+  Box, Flex, Text, VStack, IconButton, HStack, Portal, Drawer, CloseButton
 } from '@chakra-ui/react';
-import { FiHome, FiCalendar, FiCheckSquare, FiMenu, FiLogOut, FiX, FiSun, FiMoon } from 'react-icons/fi';
+import { LuHouse, LuCalendar, LuScanLine, LuMenu, LuLogOut } from 'react-icons/lu';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useColorModeValue, useColorMode } from '../components/ui/color-mode';
-import { DrawerRoot, DrawerContent, DrawerCloseTrigger, DrawerBackdrop } from '../components/ui/drawer';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface LinkItemProps {
   name: string;
@@ -15,96 +14,289 @@ interface LinkItemProps {
 }
 
 const LinkItems: Array<LinkItemProps> = [
-  { name: 'Dashboard', icon: FiHome, path: '/admin' },
-  { name: 'Eventos', icon: FiCalendar, path: '/admin/eventos' },
-  { name: 'Validar QR', icon: FiCheckSquare, path: '/admin/validar' },
+  { name: 'Dashboard', icon: LuHouse, path: '/admin' },
+  { name: 'Eventos', icon: LuCalendar, path: '/admin/eventos' },
+  { name: 'Validar QR', icon: LuScanLine, path: '/admin/validar' },
 ];
+
+// Glass effect styles
+const glassStyle = {
+  bg: 'rgba(0, 0, 0, 0.4)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+};
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const onOpen = () => setIsOpen(true);
-  const onClose = () => setIsOpen(false);
+  const location = useLocation();
 
   return (
-    <Box minH="100vh" bg={useColorModeValue('gray.100', 'gray.900')}>
-      <SidebarContent onClose={onClose} display={{ base: 'none', md: 'block' }} />
-      <DrawerRoot open={isOpen} onOpenChange={(e) => setIsOpen(e.open)} placement="start" size="xs">
-        <DrawerBackdrop />
-        <DrawerContent maxW="70vw">
-          <DrawerCloseTrigger />
-          <SidebarContent onClose={onClose} />
-        </DrawerContent>
-      </DrawerRoot>
-      {/* Mobile Nav */}
-      <MobileNav onOpen={onOpen} />
-      <Box ml={{ base: 0, md: 60 }} p="4">
-        {children}
+    <Box 
+      minH="100vh" 
+      bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)"
+      position="relative"
+    >
+      {/* Background pattern */}
+      <Box
+        position="fixed"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        opacity={0.03}
+        backgroundImage="radial-gradient(circle at 25px 25px, white 2%, transparent 0%)"
+        backgroundSize="50px 50px"
+        pointerEvents="none"
+        zIndex={0}
+      />
+
+      {/* Desktop Sidebar - Fixed */}
+      <Box
+        display={{ base: 'none', md: 'block' }}
+        position="fixed"
+        left={0}
+        top={0}
+        bottom={0}
+        w="260px"
+        {...glassStyle}
+        zIndex={100}
+      >
+        <DesktopSidebar />
       </Box>
+
+      {/* Mobile Drawer */}
+      <Drawer.Root 
+        open={isOpen} 
+        onOpenChange={(e) => setIsOpen(e.open)} 
+        placement="start"
+      >
+        <Portal>
+          <Drawer.Backdrop bg="blackAlpha.700" />
+          <Drawer.Positioner>
+            <Drawer.Content 
+              {...glassStyle}
+              maxW="280px"
+              h="100vh"
+            >
+              <SidebarContent onClose={() => setIsOpen(false)} />
+            </Drawer.Content>
+          </Drawer.Positioner>
+        </Portal>
+      </Drawer.Root>
+
+      {/* Mobile Top Bar */}
+      <MobileNav onOpen={() => setIsOpen(true)} />
+
+      {/* Main Content */}
+      <Box 
+        ml={{ base: 0, md: '260px' }}
+        pt={{ base: '70px', md: '20px' }}
+        px={{ base: 3, md: 6 }}
+        pb={{ base: '90px', md: 6 }}
+        position="relative"
+        zIndex={1}
+        minH="100vh"
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
+      </Box>
+
+      {/* Mobile Bottom Navigation */}
+      <BottomNav />
     </Box>
   );
 }
 
 interface SidebarProps {
   onClose: () => void;
-  display?: object;
 }
 
-const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
+// Desktop Sidebar Component
+const DesktopSidebar = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const { colorMode, toggleColorMode } = useColorMode();
+  const location = useLocation();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
-    <Box
-      transition="3s ease"
-      bg={useColorModeValue('white', 'gray.900')}
-      borderRight="1px"
-      borderRightColor={useColorModeValue('gray.200', 'gray.700')}
-      w={{ base: 'full', md: 60 }}
-      pos="fixed"
-      h="full"
-      {...rest}
-    >
-      <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
-        <Box>
-          <Text fontSize="lg" fontWeight="bold" lineHeight="1.2">
-            {user?.rol === 'admin' ? 'Admin' : 'Organizador'}
+    <Flex direction="column" h="100%" py={6} px={4}>
+      {/* Header */}
+      <VStack align="start" gap={1} mb={8} px={2}>
+        <HStack gap={2}>
+          <Box
+            w="10px"
+            h="10px"
+            borderRadius="full"
+            bg="linear-gradient(135deg, #ff6b6b 0%, #ffab40 100%)"
+          />
+          <Text 
+            fontSize="xl" 
+            fontWeight="700" 
+            color="white"
+            fontFamily="'Poppins', sans-serif"
+          >
+            entrada.digital
           </Text>
-          <Text fontSize="sm" color={useColorModeValue('gray.600', 'gray.400')} lineClamp={1}>
+        </HStack>
+        <Text fontSize="sm" color="whiteAlpha.500" pl={5}>
+          {user?.rol === 'admin' ? 'Panel Admin' : 'Panel Organizador'}
+        </Text>
+      </VStack>
+
+      {/* Navigation Links */}
+      <VStack align="stretch" gap={2} flex={1}>
+        {LinkItems.map((link) => {
+          const isActive = location.pathname === link.path || 
+            (link.path !== '/admin' && location.pathname.startsWith(link.path));
+
+          return (
+            <RouterLink key={link.name} to={link.path}>
+              <Flex
+                align="center"
+                gap={3}
+                p={4}
+                borderRadius="xl"
+                bg={isActive ? 'rgba(255, 107, 107, 0.2)' : 'transparent'}
+                color={isActive ? '#ff6b6b' : 'whiteAlpha.800'}
+                border={isActive ? '1px solid rgba(255, 107, 107, 0.3)' : '1px solid transparent'}
+                transition="all 0.2s"
+                _hover={{
+                  bg: isActive ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                }}
+              >
+                <link.icon size={20} />
+                <Text fontWeight={isActive ? '600' : '500'}>{link.name}</Text>
+              </Flex>
+            </RouterLink>
+          );
+        })}
+      </VStack>
+
+      {/* User info & Logout */}
+      <Box borderTop="1px solid rgba(255,255,255,0.1)" pt={4} mt={4}>
+        <HStack mb={4} px={2}>
+          <Box
+            w="36px"
+            h="36px"
+            borderRadius="full"
+            bg="linear-gradient(135deg, #ff6b6b 0%, #ffab40 100%)"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Text fontSize="sm" fontWeight="bold" color="white">
+              {user?.nombre?.charAt(0) || user?.email?.charAt(0) || 'U'}
+            </Text>
+          </Box>
+          <VStack align="start" gap={0} flex={1}>
+            <Text fontSize="sm" fontWeight="600" color="white" lineClamp={1}>
+              {user?.nombre || 'Usuario'}
+            </Text>
+            <Text fontSize="xs" color="whiteAlpha.500" lineClamp={1}>
+              {user?.email}
+            </Text>
+          </VStack>
+        </HStack>
+
+        <Box
+          as="button"
+          onClick={handleLogout}
+          display="flex"
+          alignItems="center"
+          gap={3}
+          p={4}
+          w="100%"
+          borderRadius="xl"
+          color="red.300"
+          transition="all 0.2s"
+          _hover={{ bg: 'rgba(239, 68, 68, 0.2)' }}
+        >
+          <LuLogOut size={20} />
+          <Text fontWeight="500">Cerrar Sesión</Text>
+        </Box>
+      </Box>
+    </Flex>
+  );
+};
+
+const SidebarContent = ({ onClose }: SidebarProps) => {
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    onClose();
+  };
+
+  return (
+    <Flex direction="column" h="100%" py={6} px={4}>
+      {/* Header */}
+      <Flex align="center" justify="space-between" mb={8}>
+        <VStack align="start" gap={0}>
+          <Text 
+            fontSize="xl" 
+            fontWeight="700" 
+            color="white"
+            fontFamily="'Poppins', sans-serif"
+          >
+            {user?.rol === 'admin' ? 'Admin Panel' : 'Organizador'}
+          </Text>
+          <Text fontSize="sm" color="whiteAlpha.600" lineClamp={1}>
             {user?.nombre || user?.email}
           </Text>
-        </Box>
-        <Flex gap={2}>
-          <IconButton
-            onClick={toggleColorMode}
-            variant="ghost"
-            aria-label="Cambiar tema"
-            size="sm"
-          >
-            {colorMode === 'dark' ? <FiSun /> : <FiMoon />}
-          </IconButton>
-          <IconButton
-            display={{ base: 'flex', md: 'none' }}
-            onClick={onClose}
-            variant="ghost"
-            aria-label="Cerrar menú"
-            size="sm"
-          >
-            <FiX />
-          </IconButton>
-        </Flex>
+        </VStack>
+        <CloseButton 
+          onClick={onClose} 
+          color="white"
+          size="sm"
+        />
       </Flex>
-      <VStack align="stretch" gap={0}>
+
+      {/* Navigation Links */}
+      <VStack align="stretch" gap={2} flex={1}>
         {LinkItems.map((link) => (
-          <NavItem key={link.name} icon={link.icon} path={link.path} onClose={onClose}>
+          <NavItem 
+            key={link.name} 
+            icon={link.icon} 
+            path={link.path} 
+            onClose={onClose}
+          >
             {link.name}
           </NavItem>
         ))}
-        <NavItem icon={FiLogOut} path="#" onClick={() => { logout(); navigate('/'); }} onClose={onClose}>
-          Cerrar Sesión
-        </NavItem>
       </VStack>
-    </Box>
+
+      {/* Logout */}
+      <Box
+        as="button"
+        onClick={handleLogout}
+        display="flex"
+        alignItems="center"
+        gap={3}
+        p={4}
+        borderRadius="xl"
+        color="red.300"
+        transition="all 0.2s"
+        _hover={{ bg: 'rgba(239, 68, 68, 0.2)' }}
+      >
+        <LuLogOut size={20} />
+        <Text fontWeight="500">Cerrar Sesión</Text>
+      </Box>
+    </Flex>
   );
 };
 
@@ -113,94 +305,160 @@ interface NavItemProps {
   children: ReactNode;
   path: string;
   onClose: () => void;
-  onClick?: () => void;
 }
 
-const NavItem = ({ icon: IconComponent, children, path, onClose, onClick }: NavItemProps) => {
+const NavItem = ({ icon: IconComponent, children, path, onClose }: NavItemProps) => {
   const location = useLocation();
-  const isActive = location.pathname === path;
-  const activeBg = useColorModeValue('purple.100', 'purple.900');
-  const activeColor = useColorModeValue('purple.700', 'purple.200');
+  const isActive = location.pathname === path || 
+    (path !== '/admin' && location.pathname.startsWith(path));
 
   return (
-    <RouterLink 
-      to={path} 
-      style={{ textDecoration: 'none' }} 
-      onClick={() => {
-        if (onClick) onClick();
-        onClose();
-      }}
-    >
+    <RouterLink to={path} onClick={onClose}>
       <Flex
         align="center"
-        p="4"
-        mx="4"
-        borderRadius="lg"
-        role="group"
-        cursor="pointer"
-        bg={isActive ? activeBg : 'transparent'}
-        color={isActive ? activeColor : 'inherit'}
+        gap={3}
+        p={4}
+        borderRadius="xl"
+        bg={isActive ? 'rgba(255, 107, 107, 0.2)' : 'transparent'}
+        color={isActive ? '#ff6b6b' : 'whiteAlpha.800'}
+        border={isActive ? '1px solid rgba(255, 107, 107, 0.3)' : '1px solid transparent'}
+        transition="all 0.2s"
         _hover={{
-          bg: activeBg,
-          color: activeColor,
+          bg: isActive ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 255, 255, 0.1)',
         }}
       >
-        {IconComponent && (
-          <Box
-            mr="4"
-            fontSize="16"
-            _groupHover={{
-              color: activeColor,
-            }}
-          >
-            <IconComponent />
-          </Box>
-        )}
-        {children}
+        <IconComponent size={20} />
+        <Text fontWeight={isActive ? '600' : '500'}>{children}</Text>
       </Flex>
     </RouterLink>
   );
 };
 
-interface MobileProps {
+interface MobileNavProps {
   onOpen: () => void;
 }
 
-const MobileNav = ({ onOpen }: MobileProps) => {
+const MobileNav = ({ onOpen }: MobileNavProps) => {
   const { user } = useAuth();
-  
+
   return (
     <Flex
-      ml={{ base: 0, md: 60 }}
-      px={{ base: 4, md: 4 }}
-      height="16"
+      position="fixed"
+      top={0}
+      left={0}
+      right={0}
+      h="60px"
+      px={4}
       alignItems="center"
-      bg={useColorModeValue('white', 'gray.900')}
-      borderBottomWidth="1px"
-      borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
-      justifyContent={{ base: 'space-between', md: 'flex-end' }}
+      justifyContent="space-between"
+      {...glassStyle}
+      zIndex={100}
       display={{ base: 'flex', md: 'none' }}
     >
       <IconButton
-        display={{ base: 'flex', md: 'none' }}
         onClick={onOpen}
-        variant="outline"
-        aria-label="open menu"
+        variant="ghost"
+        aria-label="Abrir menú"
+        color="white"
+        _hover={{ bg: 'whiteAlpha.200' }}
       >
-        <FiMenu />
+        <LuMenu size={24} />
       </IconButton>
 
-      <Box textAlign="center">
+      <HStack gap={2}>
+        <Box
+          w="8px"
+          h="8px"
+          borderRadius="full"
+          bg="linear-gradient(135deg, #ff6b6b 0%, #ffab40 100%)"
+        />
         <Text
-          display={{ base: 'flex', md: 'none' }}
           fontSize="lg"
-          fontWeight="bold"
+          fontWeight="700"
+          color="white"
+          fontFamily="'Poppins', sans-serif"
         >
-          {user?.rol === 'admin' ? 'Admin' : 'Organizador'}
+          {user?.rol === 'admin' ? 'Admin' : 'Panel'}
         </Text>
-      </Box>
-      
-      <Box w="40px" /> {/* Spacer para centrar */}
+      </HStack>
+
+      <Box w="40px" /> {/* Spacer */}
+    </Flex>
+  );
+};
+
+const BottomNav = () => {
+  const location = useLocation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const allItems = [
+    ...LinkItems,
+    { name: 'Salir', icon: LuLogOut, path: '#logout' }
+  ];
+
+  return (
+    <Flex
+      position="fixed"
+      bottom={0}
+      left={0}
+      right={0}
+      h="70px"
+      {...glassStyle}
+      zIndex={100}
+      display={{ base: 'flex', md: 'none' }}
+      justifyContent="space-around"
+      alignItems="center"
+      px={2}
+    >
+      {allItems.map((item) => {
+        const isActive = item.path !== '#logout' && (
+          location.pathname === item.path || 
+          (item.path !== '/admin' && location.pathname.startsWith(item.path))
+        );
+        const isLogout = item.path === '#logout';
+
+        const content = (
+          <VStack
+            gap={1}
+            p={2}
+            borderRadius="xl"
+            color={isLogout ? 'red.400' : (isActive ? '#ff6b6b' : 'whiteAlpha.600')}
+            bg={isActive ? 'rgba(255, 107, 107, 0.15)' : 'transparent'}
+            transition="all 0.2s"
+            minW="60px"
+          >
+            <item.icon size={22} />
+            <Text fontSize="xs" fontWeight={isActive ? '600' : '400'}>
+              {item.name}
+            </Text>
+          </VStack>
+        );
+
+        if (isLogout) {
+          return (
+            <Box 
+              key={item.name} 
+              as="button" 
+              onClick={handleLogout}
+              cursor="pointer"
+            >
+              {content}
+            </Box>
+          );
+        }
+
+        return (
+          <RouterLink key={item.name} to={item.path}>
+            {content}
+          </RouterLink>
+        );
+      })}
     </Flex>
   );
 };

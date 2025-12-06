@@ -2,24 +2,61 @@ import { createSystem, defaultConfig, defineConfig } from "@chakra-ui/react"
 
 const config = defineConfig({
   theme: {
+    tokens: {
+      colors: {
+        accent: {
+          primary: { value: "#ff6b6b" },
+          secondary: { value: "#ff8a80" },
+          tertiary: { value: "#ffab40" },
+          quaternary: { value: "#ff7043" },
+          quinary: { value: "#ff5722" },
+        }
+      }
+    },
     semanticTokens: {
       colors: {
         bg: {
           DEFAULT: {
-            value: { _light: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", _dark: "{colors.gray.900}" }
+            value: "#000000"
           },
           subtle: {
-            value: { _light: "{colors.gray.50}", _dark: "{colors.gray.800}" }
+            value: "#0a0a0a"
+          }
+        },
+        fg: {
+          DEFAULT: {
+            value: "#ffffff"
+          },
+          muted: {
+            value: "#a1a1aa"
           }
         }
       }
     }
   },
   globalCss: {
-    body: {
-      bg: "bg",
-      backgroundAttachment: "fixed",
-      minHeight: "100vh"
+    "html, body": {
+      bg: "#000000",
+      color: "#ffffff",
+      minHeight: "100vh",
+      fontFamily: "'Poppins', system-ui, sans-serif",
+    },
+    "::selection": {
+      bg: "rgba(255, 107, 107, 0.4)",
+      color: "white"
+    },
+    "::-webkit-scrollbar": {
+      width: "8px",
+    },
+    "::-webkit-scrollbar-track": {
+      bg: "#0a0a0a",
+    },
+    "::-webkit-scrollbar-thumb": {
+      bg: "rgba(255, 107, 107, 0.5)",
+      borderRadius: "4px",
+    },
+    "::-webkit-scrollbar-thumb:hover": {
+      bg: "rgba(255, 107, 107, 0.8)",
     }
   }
 })

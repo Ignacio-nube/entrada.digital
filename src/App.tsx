@@ -32,9 +32,11 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* Rutas Públicas */}
+        {/* Página principal - fullscreen carousel con su propio Navbar */}
+        <Route path="/" element={<Inicio />} />
+
+        {/* Otras rutas públicas con Navbar estándar */}
         <Route element={<PublicLayout />}>
-          <Route path="/" element={<Inicio />} />
           <Route path="/evento/:id" element={<EventoDetalle />} />
           <Route path="/exito" element={<ExitoCompra />} />
           <Route path="/login" element={<Login />} />

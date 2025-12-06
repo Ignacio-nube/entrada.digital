@@ -3,4 +3,10 @@ node_modules
 dist
 .DS_Store
 *.log
-.playwright-mcp.playwright-mcp/
+.playwright-mcp
+.playwright-mcp/
+
+backend/src/*.js
+backend/src/*.js.map
+backend/src/*.d.ts
+backend/src/*.d.ts.map

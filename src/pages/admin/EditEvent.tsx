@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Button, Input, VStack, Heading, Textarea,
-  Card, Spinner, Center, HStack, Flex, Text, IconButton, Separator
+  Spinner, Center, HStack, Flex, Text, IconButton
 } from '@chakra-ui/react';
-import { LuPlus, LuTrash } from 'react-icons/lu';
+import { LuPlus, LuTrash2, LuArrowLeft, LuLock } from 'react-icons/lu';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
 import { Field } from '../../components/ui/field';
 import { NumberInputRoot, NumberInputField } from '../../components/ui/number-input';
 import { toaster } from '../../components/ui/toaster';
+import CloudinaryUpload from '../../components/CloudinaryUpload';
 
 interface TicketType {
   id?: number;
@@ -31,15 +33,34 @@ interface EventoData {
   }>;
 }
 
+// Glass card style
+const glassCard = {
+  bg: 'rgba(255, 255, 255, 0.05)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  borderRadius: '2xl',
+};
+
+// Input style
+const inputStyle = {
+  bg: 'rgba(255, 255, 255, 0.05)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  color: 'white',
+  borderRadius: 'xl',
+  _placeholder: { color: 'whiteAlpha.400' },
+  _hover: { borderColor: 'rgba(255, 107, 107, 0.5)' },
+  _focus: { borderColor: '#ff6b6b', boxShadow: '0 0 0 1px #ff6b6b' },
+};
+
 export default function EditEvent() {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [nombre, setNombre] = useState('');
   const [fecha, setFecha] = useState('');
   const [lugar, setLugar] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [imagenUrl, setImagenUrl] = useState('');
-  
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
 
   const { token } = useAuth();
@@ -60,7 +81,6 @@ export default function EditEvent() {
         setDescripcion(data.descripcion);
         setImagenUrl(data.imagen_url);
         
-        // Cargar tipos de entrada
         if (data.tipos_entrada) {
           setTicketTypes(data.tipos_entrada.map((t) => ({
             id: t.id,
@@ -75,6 +95,7 @@ export default function EditEvent() {
       }
     } catch (error) {
       console.error(error);
+      toaster.error({ title: 'Error de conexión' });
     } finally {
       setLoading(false);
     }
@@ -88,20 +109,16 @@ export default function EditEvent() {
     setTicketTypes([...ticketTypes, { nombre: '', precio: '', stock: '' }]);
   };
 
-  // Nota: Por ahora solo removemos de la vista (no se borra de BD para evitar conflictos con ventas)
-  // Si es un tipo nuevo (sin ID), sí lo borramos del array.
   const handleRemoveTicketType = (index: number) => {
     const typeToRemove = ticketTypes[index];
     if (typeToRemove.id) {
       toaster.warning({
         title: 'No se puede eliminar',
-        description: 'Por seguridad, no se pueden eliminar tipos de entrada existentes que podrían tener ventas asociadas. Puedes poner el stock en 0.',
+        description: 'Los tipos existentes no se pueden eliminar. Puedes poner stock en 0.',
       });
       return;
     }
-    
-    const newTypes = ticketTypes.filter((_, i) => i !== index);
-    setTicketTypes(newTypes);
+    setTicketTypes(ticketTypes.filter((_, i) => i !== index));
   };
 
   const handleTicketTypeChange = (index: number, field: keyof Omit<TicketType, 'id'>, value: string) => {
@@ -123,11 +140,12 @@ export default function EditEvent() {
     if (validTicketTypes.some(t => !t.nombre || isNaN(t.precio) || isNaN(t.stock))) {
       toaster.error({
         title: 'Error en entradas',
-        description: 'Completa todos los campos de las entradas correctamente.',
+        description: 'Completa todos los campos correctamente.',
       });
       return;
     }
 
+    setSubmitting(true);
     try {
       const response = await fetch(`/api/eventos/${id}`, {
         method: 'PUT',
@@ -146,9 +164,7 @@ export default function EditEvent() {
       });
 
       if (response.ok) {
-        toaster.success({
-          title: 'Evento actualizado',
-        });
+        toaster.success({ title: 'Evento actualizado' });
         navigate('/admin/eventos');
       } else {
         const errorData = await response.json();
@@ -156,114 +172,212 @@ export default function EditEvent() {
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error desconocido';
-      toaster.error({
-        title: 'Error',
-        description: message,
-      });
+      toaster.error({ title: 'Error', description: message });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (loading) return <Center h="50vh"><Spinner /></Center>;
+  if (loading) {
+    return (
+      <Center h="50vh">
+        <Spinner size="xl" color="#ff6b6b" />
+      </Center>
+    );
+  }
 
   return (
-    <Box maxW="800px" mx="auto">
-      <Heading mb={6}>Editar Evento</Heading>
+    <Box maxW="600px" mx="auto">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Flex align="center" gap={3} mb={6}>
+          <IconButton
+            aria-label="Volver"
+            variant="ghost"
+            color="white"
+            _hover={{ bg: 'whiteAlpha.100' }}
+            asChild
+          >
+            <RouterLink to="/admin/eventos">
+              <LuArrowLeft size={20} />
+            </RouterLink>
+          </IconButton>
+          <Heading size="lg" color="white" fontFamily="'Poppins', sans-serif">
+            Editar Evento
+          </Heading>
+        </Flex>
+      </motion.div>
+
       <form onSubmit={handleSubmit}>
         <VStack gap={4} align="stretch">
-          <Card.Root variant="outline" bg={{ _light: "white", _dark: "gray.800" }} borderColor={{ _light: "gray.200", _dark: "gray.700" }}>
-            <Card.Body>
+          {/* Event Info Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <Box {...glassCard} p={5}>
               <VStack gap={4}>
-                <Field label="Nombre del Evento" required>
-                  <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+                <Field label={<Text color="whiteAlpha.800" fontSize="sm">Nombre del Evento</Text>} required>
+                  <Input 
+                    value={nombre} 
+                    onChange={(e) => setNombre(e.target.value)} 
+                    placeholder="Ej: Concierto Rock 2025"
+                    {...inputStyle}
+                  />
                 </Field>
 
-                <HStack width="100%">
-                  <Field label="Fecha y Hora" required>
-                    <Input type="datetime-local" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+                <HStack width="100%" gap={3}>
+                  <Field label={<Text color="whiteAlpha.800" fontSize="sm">Fecha y Hora</Text>} required>
+                    <Input 
+                      type="datetime-local" 
+                      value={fecha} 
+                      onChange={(e) => setFecha(e.target.value)} 
+                      {...inputStyle}
+                    />
                   </Field>
-                  <Field label="Lugar" required>
-                    <Input value={lugar} onChange={(e) => setLugar(e.target.value)} />
+                  <Field label={<Text color="whiteAlpha.800" fontSize="sm">Lugar</Text>} required>
+                    <Input 
+                      value={lugar} 
+                      onChange={(e) => setLugar(e.target.value)} 
+                      placeholder="Ej: Teatro Central"
+                      {...inputStyle}
+                    />
                   </Field>
                 </HStack>
 
-                <Field label="Descripción">
-                  <Textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+                <Field label={<Text color="whiteAlpha.800" fontSize="sm">Descripción</Text>}>
+                  <Textarea 
+                    value={descripcion} 
+                    onChange={(e) => setDescripcion(e.target.value)} 
+                    placeholder="Describe tu evento..."
+                    rows={3}
+                    {...inputStyle}
+                  />
                 </Field>
 
-                <Field label="URL de Imagen">
-                  <Input value={imagenUrl} onChange={(e) => setImagenUrl(e.target.value)} />
+                <Field label={<Text color="whiteAlpha.800" fontSize="sm">Imagen del Evento</Text>}>
+                  <CloudinaryUpload 
+                    value={imagenUrl} 
+                    onChange={(url) => setImagenUrl(url)} 
+                    folder="eventos"
+                  />
                 </Field>
               </VStack>
-            </Card.Body>
-          </Card.Root>
+            </Box>
+          </motion.div>
 
-          <Separator />
+          {/* Ticket Types */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+          >
+            <Box {...glassCard} p={5}>
+              <Flex justify="space-between" align="center" mb={4}>
+                <Text fontWeight="600" color="white" fontFamily="'Poppins', sans-serif">
+                  Tipos de Entrada
+                </Text>
+                <Button 
+                  size="xs" 
+                  onClick={handleAddTicketType}
+                  bg="rgba(255, 107, 107, 0.2)"
+                  color="#ff6b6b"
+                  _hover={{ bg: 'rgba(255, 107, 107, 0.3)' }}
+                  borderRadius="lg"
+                >
+                  <LuPlus size={14} />
+                  Agregar
+                </Button>
+              </Flex>
 
-          <Box>
-            <Flex justify="space-between" align="center" mb={4}>
-              <Heading size="md">Tipos de Entrada</Heading>
-              <Button size="sm" colorPalette="purple" onClick={handleAddTicketType}>
-                <LuPlus />
-                Agregar Tipo
-              </Button>
-            </Flex>
-
-            {ticketTypes.map((ticket, index) => (
-              <Card.Root key={index} mb={4} variant="outline" bg={{ _light: "white", _dark: "gray.800" }} borderColor={{ _light: "purple.200", _dark: "purple.700" }}>
-                <Card.Body>
-                  <VStack gap={3}>
-                    <Flex width="100%" justify="space-between" align="center">
-                      <Text fontWeight="bold" color={{ _light: "purple.600", _dark: "purple.300" }}>
-                        {ticket.id ? `Editar: ${ticket.nombre}` : 'Nuevo Tipo de Entrada'}
-                      </Text>
+              <VStack gap={3}>
+                {ticketTypes.map((ticket, index) => (
+                  <Box 
+                    key={ticket.id || `new-${index}`}
+                    w="100%"
+                    p={4}
+                    bg={ticket.id ? 'rgba(255, 107, 107, 0.05)' : 'rgba(255, 255, 255, 0.03)'}
+                    borderRadius="xl"
+                    border={ticket.id ? '1px solid rgba(255, 107, 107, 0.2)' : '1px solid rgba(255, 255, 255, 0.05)'}
+                  >
+                    <Flex justify="space-between" align="center" mb={3}>
+                      <HStack gap={2}>
+                        {ticket.id && <LuLock size={12} color="rgba(255,255,255,0.4)" />}
+                        <Text fontSize="sm" fontWeight="500" color={ticket.id ? '#ff6b6b' : 'whiteAlpha.600'}>
+                          {ticket.id ? ticket.nombre : `Nuevo Tipo #${index + 1}`}
+                        </Text>
+                      </HStack>
                       <IconButton
-                        aria-label="Eliminar tipo"
-                        size="sm"
-                        colorPalette="red"
+                        aria-label="Eliminar"
+                        size="xs"
                         variant="ghost"
+                        color={ticket.id ? 'whiteAlpha.400' : 'red.400'}
                         onClick={() => handleRemoveTicketType(index)}
-                        disabled={!!ticket.id} // Deshabilitar si ya existe en BD
-                        title={ticket.id ? "No se pueden eliminar entradas existentes" : "Eliminar"}
+                        disabled={!!ticket.id}
                       >
-                        <LuTrash />
+                        <LuTrash2 size={14} />
                       </IconButton>
                     </Flex>
                     
-                    <Field label="Nombre" required>
+                    <VStack gap={3}>
                       <Input 
                         value={ticket.nombre} 
                         onChange={(e) => handleTicketTypeChange(index, 'nombre', e.target.value)}
+                        placeholder="Nombre (Ej: VIP)"
+                        size="sm"
+                        {...inputStyle}
                       />
-                    </Field>
-
-                    <HStack width="100%">
-                      <Field label="Precio ($)" required>
-                        <NumberInputRoot min={0}>
+                      <HStack width="100%" gap={3}>
+                        <NumberInputRoot min={0} flex={1} size="sm">
                           <NumberInputField 
                             value={ticket.precio} 
                             onChange={(e) => handleTicketTypeChange(index, 'precio', e.target.value)}
+                            placeholder="Precio $"
+                            {...inputStyle}
                           />
                         </NumberInputRoot>
-                      </Field>
-
-                      <Field label="Stock" required>
-                        <NumberInputRoot min={0}>
+                        <NumberInputRoot min={0} flex={1} size="sm">
                           <NumberInputField 
                             value={ticket.stock} 
                             onChange={(e) => handleTicketTypeChange(index, 'stock', e.target.value)}
+                            placeholder="Stock"
+                            {...inputStyle}
                           />
                         </NumberInputRoot>
-                      </Field>
-                    </HStack>
-                  </VStack>
-                </Card.Body>
-              </Card.Root>
-            ))}
-          </Box>
+                      </HStack>
+                    </VStack>
+                  </Box>
+                ))}
+              </VStack>
+            </Box>
+          </motion.div>
 
-          <Button type="submit" colorPalette="purple" size="lg" mt={4}>
-            Guardar Cambios
-          </Button>
+          {/* Submit Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
+          >
+            <Button 
+              type="submit" 
+              size="lg" 
+              w="full"
+              loading={submitting}
+              bg="linear-gradient(135deg, #ff6b6b 0%, #ff8a80 50%, #ffab40 100%)"
+              color="white"
+              fontFamily="'Poppins', sans-serif"
+              fontWeight="600"
+              borderRadius="xl"
+              _hover={{ opacity: 0.9 }}
+            >
+              Guardar Cambios
+            </Button>
+          </motion.div>
         </VStack>
       </form>
     </Box>

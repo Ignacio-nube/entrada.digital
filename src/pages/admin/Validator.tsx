@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
-  Box, Heading, VStack, Text, Center, Icon, Flex, IconButton, Badge
+  Box, Heading, VStack, Text, Center, Flex, IconButton, Badge
 } from '@chakra-ui/react';
-import { FiCheckCircle, FiXCircle, FiCamera, FiX, FiCheck } from 'react-icons/fi';
+import { LuCamera, LuX, LuCheck, LuCircleCheck, LuCircleX } from 'react-icons/lu';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { toaster } from '@/components/ui/toaster';
-import { useColorModeValue } from '../../components/ui/color-mode';
 import { Html5Qrcode } from 'html5-qrcode';
 
 interface ValidationResult {
@@ -21,16 +21,21 @@ interface ValidationResult {
   message?: string;
 }
 
+// Glass card style
+const glassCard = {
+  bg: 'rgba(255, 255, 255, 0.05)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  borderRadius: '2xl',
+};
+
 export default function Validator() {
   const [isScanning, setIsScanning] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   const { token } = useAuth();
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const textColor = useColorModeValue('gray.700', 'gray.200');
 
-  // Cleanup scanner on unmount
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
@@ -54,14 +59,11 @@ export default function Validator() {
           qrbox: { width: 250, height: 250 },
         },
         (decodedText) => {
-          // QR detectado - pausar scanner y mostrar para confirmación
           html5QrCode.pause();
           setPendingCode(decodedText);
           setIsScanning(false);
         },
-        () => {
-          // Error de escaneo - ignorar
-        }
+        () => {}
       );
       
       setIsScanning(true);
@@ -69,7 +71,7 @@ export default function Validator() {
       console.error("Error starting scanner:", err);
       toaster.error({
         title: 'Error de cámara',
-        description: 'No se pudo acceder a la cámara. Asegúrate de dar permisos.',
+        description: 'No se pudo acceder a la cámara.',
       });
     }
   };
@@ -91,7 +93,6 @@ export default function Validator() {
     if (!pendingCode) return;
 
     if (!confirm) {
-      // Usuario rechazó - volver a escanear
       setPendingCode(null);
       if (scannerRef.current) {
         scannerRef.current.resume();
@@ -130,13 +131,9 @@ export default function Validator() {
     } catch (error) {
       console.error('Error validating:', error);
       setValidationResult({ success: false, message: 'Error de conexión' });
-      toaster.error({
-        title: 'Error de conexión',
-        duration: 3000,
-      });
+      toaster.error({ title: 'Error de conexión', duration: 3000 });
     }
 
-    // Limpiar código pendiente y detener scanner
     setPendingCode(null);
     if (scannerRef.current) {
       await scannerRef.current.stop();
@@ -151,175 +148,223 @@ export default function Validator() {
   };
 
   return (
-    <Box maxW="500px" mx="auto" px={4} pb={8}>
-      <Heading mb={4} textAlign="center" size="lg">Validar Entradas</Heading>
+    <Box maxW="500px" mx="auto" pb={8}>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Heading mb={6} textAlign="center" size="lg" color="white" fontFamily="'Poppins', sans-serif">
+          Validar Entradas
+        </Heading>
+      </motion.div>
       
       {/* Estado inicial - Botón para escanear */}
       {!isScanning && !pendingCode && !validationResult && (
-        <Center flexDirection="column" py={10}>
-          <IconButton
-            aria-label="Escanear QR"
-            onClick={startScanner}
-            colorPalette="purple"
-            size="2xl"
-            rounded="full"
-            w="150px"
-            h="150px"
-            mb={4}
-          >
-            <FiCamera size={60} />
-          </IconButton>
-          <Text fontSize="lg" color={textColor} textAlign="center">
-            Toca para escanear
-          </Text>
-          <Text fontSize="sm" color="gray.500" textAlign="center" mt={2}>
-            Apunta la cámara al código QR de la entrada
-          </Text>
-        </Center>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Center flexDirection="column" py={10}>
+            <Box
+              as="button"
+              onClick={startScanner}
+              w="160px"
+              h="160px"
+              borderRadius="full"
+              bg="linear-gradient(135deg, #ff6b6b 0%, #ff8a80 50%, #ffab40 100%)"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              mb={6}
+              boxShadow="0 10px 40px rgba(255, 107, 107, 0.4)"
+              _hover={{ transform: 'scale(1.05)' }}
+              _active={{ transform: 'scale(0.95)' }}
+              transition="transform 0.2s"
+            >
+              <LuCamera size={60} color="white" />
+            </Box>
+            <Text fontSize="lg" color="white" textAlign="center" fontWeight="600">
+              Toca para escanear
+            </Text>
+            <Text fontSize="sm" color="whiteAlpha.600" textAlign="center" mt={2}>
+              Apunta la cámara al código QR de la entrada
+            </Text>
+          </Center>
+        </motion.div>
       )}
 
       {/* Scanner activo */}
       {isScanning && (
-        <Box position="relative">
-          <Box 
-            id="qr-reader" 
-            w="100%" 
-            borderRadius="xl" 
-            overflow="hidden"
-            border="3px solid"
-            borderColor="purple.500"
-          />
-          <IconButton
-            aria-label="Cancelar"
-            onClick={stopScanner}
-            position="absolute"
-            top={2}
-            right={2}
-            colorPalette="red"
-            size="lg"
-            rounded="full"
-          >
-            <FiX />
-          </IconButton>
-          <Text textAlign="center" mt={4} color={textColor}>
-            Buscando código QR...
-          </Text>
-        </Box>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Box position="relative">
+            <Box 
+              id="qr-reader" 
+              w="100%" 
+              borderRadius="2xl" 
+              overflow="hidden"
+              border="3px solid #ff6b6b"
+            />
+            <IconButton
+              aria-label="Cancelar"
+              onClick={stopScanner}
+              position="absolute"
+              top={3}
+              right={3}
+              bg="rgba(239, 68, 68, 0.9)"
+              color="white"
+              size="lg"
+              borderRadius="full"
+              _hover={{ bg: 'rgba(239, 68, 68, 1)' }}
+            >
+              <LuX size={20} />
+            </IconButton>
+            <Text textAlign="center" mt={4} color="whiteAlpha.800">
+              Buscando código QR...
+            </Text>
+          </Box>
+        </motion.div>
       )}
 
-      {/* QR Detectado - Confirmar tipo Tinder */}
+      {/* QR Detectado - Confirmar */}
       {pendingCode && !validationResult && (
-        <Box>
-          <Box 
-            bg={cardBg}
-            p={6}
-            borderRadius="2xl"
-            shadow="xl"
-            border="2px solid"
-            borderColor="purple.400"
-            mb={6}
-          >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Box {...glassCard} p={6} mb={6}>
             <VStack gap={4}>
-              <Badge colorPalette="purple" fontSize="md" px={4} py={2} borderRadius="full">
+              <Badge 
+                px={4} 
+                py={2} 
+                borderRadius="full"
+                bg="rgba(255, 107, 107, 0.2)"
+                color="#ff6b6b"
+                fontSize="sm"
+                fontWeight="600"
+              >
                 QR DETECTADO
               </Badge>
               
-              <Text fontSize="sm" fontFamily="mono" color="gray.500" textAlign="center">
-                {pendingCode.substring(0, 16)}...
+              <Text fontSize="xs" fontFamily="mono" color="whiteAlpha.500" textAlign="center">
+                {pendingCode.substring(0, 20)}...
               </Text>
 
-              <Text fontSize="lg" fontWeight="bold" textAlign="center" color={textColor}>
+              <Text fontSize="lg" fontWeight="bold" textAlign="center" color="white">
                 ¿Validar esta entrada?
               </Text>
               
-              <Text fontSize="sm" color="gray.500" textAlign="center">
+              <Text fontSize="sm" color="whiteAlpha.500" textAlign="center">
                 Al confirmar, la entrada quedará marcada como usada
               </Text>
             </VStack>
           </Box>
 
-          {/* Botones tipo Tinder */}
-          <Flex justify="center" gap={8}>
-            <IconButton
-              aria-label="Rechazar"
-              onClick={() => handleValidate(false)}
-              colorPalette="red"
-              size="2xl"
-              rounded="full"
-              w="80px"
-              h="80px"
-              shadow="lg"
-              _hover={{ transform: 'scale(1.1)' }}
-              transition="transform 0.2s"
-            >
-              <FiX size={40} />
-            </IconButton>
+          {/* Botones estilo Tinder */}
+          <Flex justify="center" gap={10}>
+            <VStack gap={2}>
+              <IconButton
+                aria-label="Rechazar"
+                onClick={() => handleValidate(false)}
+                w="80px"
+                h="80px"
+                borderRadius="full"
+                bg="rgba(239, 68, 68, 0.2)"
+                color="#ef4444"
+                border="2px solid rgba(239, 68, 68, 0.3)"
+                _hover={{ bg: 'rgba(239, 68, 68, 0.3)', transform: 'scale(1.1)' }}
+                _active={{ transform: 'scale(0.95)' }}
+                transition="all 0.2s"
+              >
+                <LuX size={36} />
+              </IconButton>
+              <Text fontSize="sm" color="red.400" fontWeight="600">Cancelar</Text>
+            </VStack>
             
-            <IconButton
-              aria-label="Aceptar"
-              onClick={() => handleValidate(true)}
-              colorPalette="green"
-              size="2xl"
-              rounded="full"
-              w="80px"
-              h="80px"
-              shadow="lg"
-              _hover={{ transform: 'scale(1.1)' }}
-              transition="transform 0.2s"
-            >
-              <FiCheck size={40} />
-            </IconButton>
+            <VStack gap={2}>
+              <IconButton
+                aria-label="Aceptar"
+                onClick={() => handleValidate(true)}
+                w="80px"
+                h="80px"
+                borderRadius="full"
+                bg="rgba(34, 197, 94, 0.2)"
+                color="#22c55e"
+                border="2px solid rgba(34, 197, 94, 0.3)"
+                _hover={{ bg: 'rgba(34, 197, 94, 0.3)', transform: 'scale(1.1)' }}
+                _active={{ transform: 'scale(0.95)' }}
+                transition="all 0.2s"
+              >
+                <LuCheck size={36} />
+              </IconButton>
+              <Text fontSize="sm" color="green.400" fontWeight="600">Validar</Text>
+            </VStack>
           </Flex>
-          
-          <Flex justify="center" gap={8} mt={2}>
-            <Text fontSize="sm" color="red.500" fontWeight="bold">Cancelar</Text>
-            <Text fontSize="sm" color="green.500" fontWeight="bold">Validar</Text>
-          </Flex>
-        </Box>
+        </motion.div>
       )}
 
       {/* Resultado de validación */}
       {validationResult && (
-        <Box>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
           <Box 
-            bg={validationResult.success ? 'green.subtle' : 'red.subtle'} 
-            borderColor={validationResult.success ? 'green.muted' : 'red.muted'}
-            borderWidth="2px"
-            borderRadius="2xl"
+            {...glassCard}
             p={6}
             mb={6}
+            borderColor={validationResult.success ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)'}
+            bg={validationResult.success ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}
           >
             <Center flexDirection="column" py={4}>
-              <Icon 
-                fontSize="6xl"
-                color={validationResult.success ? 'green.solid' : 'red.solid'} 
+              <Box
                 mb={4}
+                color={validationResult.success ? '#22c55e' : '#ef4444'}
               >
-                {validationResult.success ? <FiCheckCircle /> : <FiXCircle />}
-              </Icon>
+                {validationResult.success ? <LuCircleCheck size={64} /> : <LuCircleX size={64} />}
+              </Box>
               
               <Heading 
                 size="lg" 
                 mb={4} 
-                color={validationResult.success ? 'green.fg' : 'red.fg'}
+                color={validationResult.success ? '#22c55e' : '#ef4444'}
                 textAlign="center"
+                fontFamily="'Poppins', sans-serif"
               >
                 {validationResult.success ? '¡ACCESO PERMITIDO!' : 'ACCESO DENEGADO'}
               </Heading>
               
               {validationResult.success && validationResult.data ? (
-                <VStack gap={2} w="100%">
-                  <Badge colorPalette="green" fontSize="md" px={4} py={1}>
+                <VStack gap={3} w="100%">
+                  <Badge 
+                    px={4} 
+                    py={2}
+                    borderRadius="full"
+                    bg="rgba(34, 197, 94, 0.2)"
+                    color="#22c55e"
+                    fontSize="sm"
+                  >
                     {validationResult.data.evento}
                   </Badge>
-                  <Text fontWeight="bold" fontSize="lg">{validationResult.data.cliente_nombre}</Text>
-                  <Text color="gray.500">{validationResult.data.cliente_email}</Text>
-                  <Text fontSize="sm">
-                    <strong>Tipo:</strong> {validationResult.data.tipo_entrada}
+                  <Text fontWeight="bold" fontSize="lg" color="white">
+                    {validationResult.data.cliente_nombre}
+                  </Text>
+                  <Text color="whiteAlpha.600" fontSize="sm">
+                    {validationResult.data.cliente_email}
+                  </Text>
+                  <Text fontSize="sm" color="whiteAlpha.800">
+                    <Box as="span" color="#ff6b6b">{validationResult.data.tipo_entrada}</Box>
                   </Text>
                 </VStack>
               ) : (
-                <Text fontWeight="bold" color="red.fg" textAlign="center" fontSize="lg">
+                <Text fontWeight="bold" color="#ef4444" textAlign="center" fontSize="lg">
                   {validationResult.message}
                 </Text>
               )}
@@ -327,23 +372,29 @@ export default function Validator() {
           </Box>
 
           {/* Botón para escanear otro */}
-          <Center>
-            <IconButton
-              aria-label="Escanear otro"
+          <Center flexDirection="column">
+            <Box
+              as="button"
               onClick={resetAndScan}
-              colorPalette="purple"
-              size="2xl"
-              rounded="full"
               w="100px"
               h="100px"
+              borderRadius="full"
+              bg="linear-gradient(135deg, #ff6b6b 0%, #ff8a80 50%, #ffab40 100%)"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              boxShadow="0 10px 40px rgba(255, 107, 107, 0.3)"
+              _hover={{ transform: 'scale(1.05)' }}
+              _active={{ transform: 'scale(0.95)' }}
+              transition="transform 0.2s"
             >
-              <FiCamera size={40} />
-            </IconButton>
+              <LuCamera size={40} color="white" />
+            </Box>
+            <Text textAlign="center" mt={3} color="whiteAlpha.700" fontSize="sm">
+              Escanear otra entrada
+            </Text>
           </Center>
-          <Text textAlign="center" mt={2} color={textColor}>
-            Escanear otra entrada
-          </Text>
-        </Box>
+        </motion.div>
       )}
     </Box>
   );

@@ -5,6 +5,7 @@ import { Box, Heading, Text, Button } from '@chakra-ui/react'
 import { Provider } from '@/components/ui/provider'
 import { Toaster } from '@/components/ui/toaster'
 import './index.css'
+import './styles/futuristic.css'
 import App from './App.tsx'
 
 interface ErrorBoundaryState {
